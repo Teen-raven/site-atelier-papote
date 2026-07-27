@@ -1,23 +1,22 @@
 // ==========================================
 // 1. BASE DE DONNÉES DES ÉVÉNEMENTS (Par date YYYY-MM-DD)
 // ==========================================
-
 const eventsData = {
     "2026-08-03": {
+        icon: "🎬", // Emoji ou icône affiché dans la case du calendrier
         title: "03 Août - Film, Débat, Repas & Just Dance",
-        image: "assets/images/coraline.jpg", // Remplace par le bon chemin vers l'affiche du film
+        image: "assets/images/coraline.jpg",
         description: "Matin : Projection du film & débat. Midi : Repas partagé. Après-midi : Session Just Dance !",
-        link: "pages/3-aout-film.html" // Lien vers la page secondaire (questionnaire + recettes)
+        link: "pages/3-aout-film.html"
     }
-    // Tu pourras ajouter d'autres événements plus tard en suivant ce modèle :
-    // , "2026-08-10": { title: "...", image: "...", description: "...", link: "..." }
+    // Tu peux ajouter d'autres événements très facilement :
+    // , "2026-08-15": { icon: "🎨", title: "Atelier Peinture", image: "assets/images/peinture.jpg", description: "...", link: "..." }
 };
 
 
 // ==========================================
 // 2. GESTION DU CARROUSEL / SLIDESHOW
 // ==========================================
-
 const slides = [
 	{
 		image: "coraline.jpg",
@@ -88,7 +87,6 @@ createDots();
 // ==========================================
 // 3. GESTION DU CALENDRIER INTERACTIF
 // ==========================================
-
 const monthNames = [
     "Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
     "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"
@@ -129,16 +127,25 @@ function renderCalendar() {
     // Remplissage des jours
     for (let day = 1; day <= totalDays; day++) {
         const dayDiv = document.createElement('div');
-        dayDiv.textContent = day;
-
         const formattedDate = year + "-" + String(month + 1).padStart(2, '0') + "-" + String(day).padStart(2, '0');
 
-        // Indiquer le jour actuel (Aujourd'hui)
+        // Récupération des infos d'événement s'il y en a un ce jour-là
+        const eventData = eventsData[formattedDate];
+
+        // S'il y a un atelier ce jour-là, on affiche le chiffre + l'icône
+        if (eventData && eventData.icon) {
+            dayDiv.innerHTML = `<span>${day}</span> <span class="event-icon">${eventData.icon}</span>`;
+            dayDiv.classList.add('has-event');
+        } else {
+            dayDiv.textContent = day;
+        }
+
+        // Indiquer la case d'aujourd'hui
         if (day === today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
             dayDiv.classList.add('today');
         }
 
-        // Indiquer la case sélectionnée
+        // Indiquer la case sélectionnée au clic
         if (formattedDate === selectedDateStr) {
             dayDiv.classList.add('selected');
         }
@@ -159,7 +166,6 @@ function renderCalendar() {
 
             // AFFICHER / CACHER L'APERÇU DE L'ÉVÉNEMENT (1er Clic)
             const eventPreview = document.getElementById('event-preview');
-            const eventData = eventsData[formattedDate];
 
             if (eventData && eventPreview) {
                 document.getElementById('event-title').textContent = eventData.title;
@@ -167,9 +173,9 @@ function renderCalendar() {
                 document.getElementById('event-description').textContent = eventData.description;
                 document.getElementById('event-link').href = eventData.link;
                 
-                eventPreview.style.display = "block"; // Affiche l'affiche du film
+                eventPreview.style.display = "block"; // Affiche l'aperçu du film
             } else if (eventPreview) {
-                eventPreview.style.display = "none"; // Masque l'aperçu si aucun événement prévu
+                eventPreview.style.display = "none"; // Masque si aucun événement
             }
 
             // Rafraîchir le calendrier pour colorer la case cliquée
@@ -195,7 +201,6 @@ document.getElementById('next-month')?.addEventListener('click', () => {
 // ==========================================
 // 4. ENVOI DU FORMULAIRE DE SATISFACTION
 // ==========================================
-
 const workshopForm = document.getElementById('workshop-form');
 const formMessage = document.getElementById('form-message');
 
@@ -243,7 +248,6 @@ if (workshopForm) {
 // ==========================================
 // INITIALISATION AU CHARGEMENT DE LA PAGE
 // ==========================================
-
 document.addEventListener('DOMContentLoaded', () => {
     renderCalendar();
 });

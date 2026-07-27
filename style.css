@@ -285,3 +285,14 @@ body {
 .btn-submit:hover {
     background: #15803d;
 }
+.calendar-days div.has-event{
+	display:flex;
+	flex-direction:column;
+	align-items:center;
+	justify-content:center;
+	font-weight:bold;
+}
+.event-icon{
+font-size:0.85rem;
+margin-top:2px
+}
