@@ -103,21 +103,37 @@
 <div id="register-modal" class="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); justify-content:center; align-items:center; z-index:1000;">
     <div style="background:white; padding:25px; border-radius:10px; width:90%; max-width:400px; position:relative;">
         <span class="close-modal" style="position:absolute; top:10px; right:15px; cursor:pointer; font-size:20px;">&times;</span>
-        <h3>👤 Connexion / Inscription</h3>
         
-        <label style="display:block; margin-top:10px;">Votre Pseudo :</label>
-        <input type="text" id="reg-username" placeholder="Ex: Alex" style="width:100%; padding:8px; margin-top:5px; box-sizing:border-box;">
+        <div style="display:flex; border-bottom:2px solid #e2e8f0; margin-bottom:15px;">
+            <button id="tab-login" class="active" style="flex:1; padding:10px; border:none; background:none; cursor:pointer; font-weight:bold;">Se connecter</button>
+            <button id="tab-register" style="flex:1; padding:10px; border:none; background:none; cursor:pointer; font-weight:bold;">Créer un compte</button>
+        </div>
 
-        <label style="display:block; margin-top:10px;">Votre Mot de passe :</label>
-        <input type="password" id="reg-password" placeholder="Mot de passe" style="width:100%; padding:8px; margin-top:5px; box-sizing:border-box;">
+        <div id="form-login">
+            <label style="display:block; margin-top:10px;">Pseudo :</label>
+            <input type="text" id="login-username" placeholder="Votre pseudo" style="width:100%; padding:8px; margin-top:5px; box-sizing:border-box;">
 
-        <label style="display:block; margin-top:10px;">Lien de votre photo/avatar (Optionnel) :</label>
-        <input type="text" id="reg-avatar" placeholder="https://..." style="width:100%; padding:8px; margin-top:5px; box-sizing:border-box;">
+            <label style="display:block; margin-top:10px;">Mot de passe :</label>
+            <input type="password" id="login-password" placeholder="Votre mot de passe" style="width:100%; padding:8px; margin-top:5px; box-sizing:border-box;">
 
-        <button id="btn-submit-register" style="width:100%; background:#0284c7; color:white; border:none; padding:10px; margin-top:15px; border-radius:6px; cursor:pointer; font-weight:bold;">Se connecter / S'inscrire</button>
+            <button id="btn-submit-login" style="width:100%; background:#0284c7; color:white; border:none; padding:10px; margin-top:15px; border-radius:6px; cursor:pointer; font-weight:bold;">Connexion</button>
+        </div>
+
+        <div id="form-register" style="display:none;">
+            <label style="display:block; margin-top:10px;">Choisissez un pseudo :</label>
+            <input type="text" id="reg-username" placeholder="Ex: Alex" style="width:100%; padding:8px; margin-top:5px; box-sizing:border-box;">
+
+            <label style="display:block; margin-top:10px;">Choisissez un mot de passe :</label>
+            <input type="password" id="reg-password" placeholder="Mot de passe" style="width:100%; padding:8px; margin-top:5px; box-sizing:border-box;">
+
+            <label style="display:block; margin-top:10px;">Lien de votre photo / avatar (Optionnel) :</label>
+            <input type="text" id="reg-avatar" placeholder="https://..." style="width:100%; padding:8px; margin-top:5px; box-sizing:border-box;">
+
+            <button id="btn-submit-register" style="width:100%; background:#16a34a; color:white; border:none; padding:10px; margin-top:15px; border-radius:6px; cursor:pointer; font-weight:bold;">S'inscrire</button>
+        </div>
     </div>
 </div>
- 
+
 
     <header class="container">
         <div id="banner" style="position: relative; text-align: center;">

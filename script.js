@@ -265,7 +265,7 @@ document.getElementById('next-month')?.addEventListener('click', () => {
     renderCalendar();
 });
 // ==========================================
-// 1. GESTION DE LA BASE DE DONNÉES LOCALE
+// 1. GESTION DES DONNÉES (LOCALES)
 // ==========================================
 function getUsers() {
     return JSON.parse(localStorage.getItem('registered_users')) || [];
@@ -284,14 +284,18 @@ function saveSubmissions(submissions) {
 }
 
 // ==========================================
-// 2. AUTHENTIFICATION (INSCRIPTION & CONNEXION)
+// 2. AUTHENTIFICATION & ONGLETS (CONNEXION / INSCRIPTION)
 // ==========================================
 function setupAuth() {
     const regModal = document.getElementById('register-modal');
     const adminModal = document.getElementById('admin-modal');
 
-    document.getElementById('btn-open-register')?.addEventListener('click', () => { if(regModal) regModal.style.display = 'flex'; });
-    document.getElementById('btn-open-admin-login')?.addEventListener('click', () => { if(adminModal) adminModal.style.display = 'flex'; });
+    document.getElementById('btn-open-register')?.addEventListener('click', () => { 
+        if(regModal) regModal.style.display = 'flex'; 
+    });
+    document.getElementById('btn-open-admin-login')?.addEventListener('click', () => { 
+        if(adminModal) adminModal.style.display = 'flex'; 
+    });
 
     document.querySelectorAll('.close-modal').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -300,56 +304,87 @@ function setupAuth() {
         });
     });
 
-    // INSCRIPTION UTILISATEUR (Pseudo + Mot de passe)
+    // Basculer entre les onglets "Connexion" et "Inscription"
+    const tabLogin = document.getElementById('tab-login');
+    const tabRegister = document.getElementById('tab-register');
+    const formLogin = document.getElementById('form-login');
+    const formRegister = document.getElementById('form-register');
+
+    tabLogin?.addEventListener('click', () => {
+        tabLogin.classList.add('active');
+        tabRegister.classList.remove('active');
+        formLogin.style.display = 'block';
+        formRegister.style.display = 'none';
+    });
+
+    tabRegister?.addEventListener('click', () => {
+        tabRegister.classList.add('active');
+        tabLogin.classList.remove('active');
+        formRegister.style.display = 'block';
+        formLogin.style.display = 'none';
+    });
+
+    // --- CONNEXION CLASSIQUE ---
+    document.getElementById('btn-submit-login')?.addEventListener('click', () => {
+        const username = document.getElementById('login-username')?.value.trim();
+        const password = document.getElementById('login-password')?.value.trim();
+
+        if (!username || !password) {
+            alert("Veuillez remplir le pseudo et le mot de passe.");
+            return;
+        }
+
+        const users = getUsers();
+        const foundUser = users.find(u => u.username.toLowerCase() === username.toLowerCase() && u.password === password);
+
+        if (foundUser) {
+            const session = { username: foundUser.username, avatar: foundUser.avatar, isAdmin: false };
+            localStorage.setItem('user_session', JSON.stringify(session));
+            if(regModal) regModal.style.display = 'none';
+            updateAuthUI();
+        } else {
+            alert("Pseudo ou mot de passe incorrect !");
+        }
+    });
+
+    // --- CRÉATION DE COMPTE (INSCRIPTION) ---
     document.getElementById('btn-submit-register')?.addEventListener('click', () => {
         const username = document.getElementById('reg-username')?.value.trim();
         const password = document.getElementById('reg-password')?.value.trim();
         const avatar = document.getElementById('reg-avatar')?.value.trim() || `https://api.dicebear.com/7.x/bottts/svg?seed=${username}`;
 
         if (!username || !password) {
-            alert("Veuillez remplir le pseudo et le mot de passe !");
+            alert("Veuillez choisir un pseudo et un mot de passe.");
             return;
         }
 
         let users = getUsers();
-        const existingUser = users.find(u => u.username.toLowerCase() === username.toLowerCase());
-
-        if (existingUser) {
-            // Tente une connexion si l'utilisateur existe déjà
-            if (existingUser.password === password) {
-                const session = { username: existingUser.username, avatar: existingUser.avatar, isAdmin: false };
-                localStorage.setItem('user_session', JSON.stringify(session));
-                alert("Connexion réussie !");
-                if(regModal) regModal.style.display = 'none';
-                updateAuthUI();
-            } else {
-                alert("Ce pseudo existe déjà. Mot de passe incorrect !");
-            }
-        } else {
-            // Création du compte
-            const newUser = { id: Date.now(), username, password, avatar, createdAt: new Date().toLocaleDateString('fr-FR') };
-            users.push(newUser);
-            saveUsers(users);
-
-            // Connexion automatique
-            const session = { username: newUser.username, avatar: newUser.avatar, isAdmin: false };
-            localStorage.setItem('user_session', JSON.stringify(session));
-            alert("Compte créé avec succès !");
-            if(regModal) regModal.style.display = 'none';
-            updateAuthUI();
+        if (users.some(u => u.username.toLowerCase() === username.toLowerCase())) {
+            alert("Ce pseudo est déjà pris. Veuillez en choisir un autre ou vous connecter.");
+            return;
         }
+
+        const newUser = { id: Date.now(), username, password, avatar, createdAt: new Date().toLocaleDateString('fr-FR') };
+        users.push(newUser);
+        saveUsers(users);
+
+        // Connexion immédiate après inscription
+        const session = { username: newUser.username, avatar: newUser.avatar, isAdmin: false };
+        localStorage.setItem('user_session', JSON.stringify(session));
+        if(regModal) regModal.style.display = 'none';
+        updateAuthUI();
     });
 
-    // CONNEXION ADMIN
+    // --- CONNEXION ADMIN ---
     document.getElementById('btn-submit-admin')?.addEventListener('click', () => {
         const pass = document.getElementById('admin-pass')?.value.trim();
-        if (pass === 'admin123') { // 🔑 Mot de passe Admin
+        if (pass === 'admin123') {
             const session = { username: "Admin", avatar: "https://api.dicebear.com/7.x/bottts/svg?seed=Admin", isAdmin: true };
             localStorage.setItem('user_session', JSON.stringify(session));
             if(adminModal) adminModal.style.display = 'none';
             updateAuthUI();
         } else {
-            alert("Mot de passe admin incorrect !");
+            alert("Mot de passe administrateur incorrect.");
         }
     });
 }
@@ -362,12 +397,12 @@ function updateAuthUI() {
     if (user && authStatus && authActions) {
         authStatus.innerHTML = `
             <div style="display:flex; align-items:center; gap:10px;">
-                <img src="${user.avatar}" style="width:35px; height:35px; border-radius:50%; object-fit:cover;">
+                <img src="${user.avatar}" style="width:38px; height:38px; border-radius:50%; object-fit:cover; border: 2px solid #0284c7;">
                 <span>Bienvenue, <strong>${user.username}</strong> ${user.isAdmin ? '🛠️' : ''}</span>
             </div>
         `;
 
-        let adminBtn = user.isAdmin ? `<a href="admin.html" class="btn-auth" style="background-color:#e11d48; color:white; text-decoration:none; padding:8px 12px; border-radius:5px;">Page Admin ➔</a>` : '';
+        let adminBtn = user.isAdmin ? `<a href="admin.html" class="btn-auth" style="background-color:#e11d48; color:white; text-decoration:none; padding:8px 12px; border-radius:5px; font-weight:bold;">Page Admin ➔</a>` : '';
 
         authActions.innerHTML = `
             ${adminBtn}
@@ -385,7 +420,7 @@ function updateAuthUI() {
 }
 
 // ==========================================
-// 3. SOUMISSION DU FORMULAIRE
+// 3. ENREGISTREMENT DES RÉPONSES
 // ==========================================
 const workshopForm = document.getElementById('workshop-form');
 const formMessage = document.getElementById('form-message');
@@ -410,12 +445,17 @@ if (workshopForm) {
 
         if (formMessage) {
             formMessage.style.color = '#16a34a';
-            formMessage.textContent = '✅ Inscription et réponses enregistrées avec succès !';
+            formMessage.textContent = '✅ Inscription et réponses enregistrées !';
         }
         
         workshopForm.reset();
     });
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+    setupAuth();
+    updateAuthUI();
+});
 
 // ==========================================
 // INITIALISATION
