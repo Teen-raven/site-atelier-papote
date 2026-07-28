@@ -13,27 +13,115 @@ const eventsData = {
 
 
 // ==========================================
-// 2. GESTION DU CARROUSEL / SLIDESHOW
+// 2. GESTION DE LA CONNEXION (USER & ADMIN)
+// ==========================================
+const modal = document.getElementById('login-modal');
+const btnOpenLogin = document.getElementById('btn-open-login');
+const btnCloseModal = document.getElementById('close-modal');
+const btnSubmitLogin = document.getElementById('btn-submit-login');
+const inputUsername = document.getElementById('login-username');
+const inputAvatar = document.getElementById('login-avatar');
+const inputPassword = document.getElementById('login-password');
+const avatarGroup = document.getElementById('avatar-group');
+const passwordGroup = document.getElementById('password-group');
+const authStatus = document.getElementById('auth-status');
+const btnAdminSpace = document.getElementById('btn-admin-space');
+
+// Détection de la saisie 'admin' pour afficher le champ mot de passe
+inputUsername?.addEventListener('input', (e) => {
+    if (e.target.value.trim().toLowerCase() === 'admin') {
+        passwordGroup.style.display = 'block';
+        avatarGroup.style.display = 'none';
+    } else {
+        passwordGroup.style.display = 'none';
+        avatarGroup.style.display = 'block';
+    }
+});
+
+// Ouvrir / Fermer la pop-up
+btnOpenLogin?.addEventListener('click', () => {
+    const currentUser = JSON.parse(localStorage.getItem('user_session'));
+    if (currentUser) {
+        // Déconnexion
+        localStorage.removeItem('user_session');
+        updateAuthUI();
+    } else {
+        modal.style.display = 'flex';
+    }
+});
+
+btnCloseModal?.addEventListener('click', () => { modal.style.display = 'none'; });
+
+// Validation de la connexion
+btnSubmitLogin?.addEventListener('click', () => {
+    const username = inputUsername.value.trim();
+    const avatar = inputAvatar.value.trim() || "https://api.dicebear.com/7.x/bottts/svg?seed=" + username;
+    const password = inputPassword.value.trim();
+
+    if (!username) {
+        alert("Veuillez entrer un pseudo.");
+        return;
+    }
+
+    if (username.toLowerCase() === 'admin') {
+        if (password === 'admin123') { // 👈 Ton mot de passe admin
+            const session = { username: "Admin", avatar: "https://api.dicebear.com/7.x/bottts/svg?seed=Admin", isAdmin: true };
+            localStorage.setItem('user_session', JSON.stringify(session));
+            modal.style.display = 'none';
+            updateAuthUI();
+        } else {
+            alert("Mot de passe administrateur incorrect.");
+        }
+    } else {
+        const session = { username: username, avatar: avatar, isAdmin: false };
+        localStorage.setItem('user_session', JSON.stringify(session));
+        modal.style.display = 'none';
+        updateAuthUI();
+    }
+});
+
+// Mettre à jour l'affichage de la barre de connexion
+function updateAuthUI() {
+    const user = JSON.parse(localStorage.getItem('user_session'));
+
+    if (user) {
+        btnOpenLogin.textContent = "Déconnexion";
+        authStatus.innerHTML = `
+            <div class="user-profile">
+                <img src="${user.avatar}" alt="Avatar" class="user-avatar" onerror="this.src='https://api.dicebear.com/7.x/bottts/svg?seed=User'">
+                <span>Bienvenue, <strong>${user.username}</strong> !</span>
+            </div>
+        `;
+
+        // Remplit automatiquement le champ pseudo dans le formulaire
+        const nameInput = document.getElementById('name');
+        if (nameInput) nameInput.value = user.username;
+
+        if (user.isAdmin) {
+            btnAdminSpace.style.display = 'inline-block';
+        } else {
+            btnAdminSpace.style.display = 'none';
+        }
+    } else {
+        btnOpenLogin.textContent = "Se connecter";
+        authStatus.innerHTML = `<span>Bienvenue sur Atelier Papote !</span>`;
+        btnAdminSpace.style.display = 'none';
+    }
+}
+
+
+// ==========================================
+// 3. GESTION DU CARROUSEL / SLIDESHOW
 // ==========================================
 const slides = [
-	{
-		image: "coraline.jpg",
-		tagLine: "Questionnaire satisfaction <span>en ligne</span>"
-	},
-	{
-		image: "slide2.jpg",
-		tagLine: "Impressions tous formats <span>en atelier et en ligne</span>"
-	},
-	{
-		image: "slide3.jpg",
-		tagLine: "Grand choix de visuels <span>pour tous vos besoins</span>"
-	}
+	{ image: "coraline.jpg", tagLine: "Questionnaire satisfaction <span>en ligne</span>" },
+	{ image: "slide2.jpg", tagLine: "Impressions tous formats <span>en atelier et en ligne</span>" },
+	{ image: "slide3.jpg", tagLine: "Grand choix de visuels <span>pour tous vos besoins</span>" }
 ];
 
 const bannerImg = document.getElementById('banner-img');
 const bannerTxt = document.getElementById('banner-txt');
 const dotsContainer = document.getElementById('dots');
-
 let currentIndex = 0;
 
 function createDots() {
@@ -42,9 +130,7 @@ function createDots() {
 	slides.forEach((_, index) => {
 		const dot = document.createElement('div');
 		dot.classList.add('dot');
-		if (index === currentIndex) {
-			dot.classList.add('dot_selected');
-		}
+		if (index === currentIndex) dot.classList.add('dot_selected');
 		dot.addEventListener('click', () => {
 			currentIndex = index;
 			updateSlide();
@@ -59,31 +145,16 @@ function updateSlide() {
 	
 	const dots = document.querySelectorAll('.dot');
 	dots.forEach((dot, index) => {
-		if (index === currentIndex) {
-			dot.classList.add('dot_selected');
-		} else {
-			dot.classList.remove('dot_selected');
-		}
+		if (index === currentIndex) dot.classList.add('dot_selected');
+		else dot.classList.remove('dot_selected');
 	});
-}
-
-function changeSlide(direction) {
-	currentIndex += direction;
-
-	if (currentIndex < 0) {
-		currentIndex = slides.length - 1;
-	} else if (currentIndex >= slides.length) {
-		currentIndex = 0;
-	}
-
-	updateSlide();
 }
 
 createDots();
 
 
 // ==========================================
-// 3. GESTION DU CALENDRIER INTERACTIF
+// 4. GESTION DU CALENDRIER INTERACTIF
 // ==========================================
 const monthNames = [
     "Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
@@ -98,22 +169,17 @@ function renderCalendar() {
     const month = currentDate.getMonth();
 
     const monthYearElement = document.getElementById('calendar-month-year');
-    if (monthYearElement) {
-        monthYearElement.textContent = monthNames[month] + " " + year;
-    }
+    if (monthYearElement) monthYearElement.textContent = monthNames[month] + " " + year;
 
     const daysContainer = document.getElementById('calendar-days');
     if (!daysContainer) return;
 
     daysContainer.innerHTML = '';
 
-    // Décalage pour commencer par le Lundi (Lundi = 0, Dimanche = 6)
     let firstDayIndex = new Date(year, month, 1).getDay();
     firstDayIndex = (firstDayIndex === 0) ? 6 : firstDayIndex - 1;
-
     const totalDays = new Date(year, month + 1, 0).getDate();
 
-    // Cases vides pour décaler le 1er jour du mois
     for (let i = 0; i < firstDayIndex; i++) {
         const emptyDiv = document.createElement('div');
         emptyDiv.classList.add('empty');
@@ -122,11 +188,9 @@ function renderCalendar() {
 
     const today = new Date();
 
-    // Remplissage des jours
     for (let day = 1; day <= totalDays; day++) {
         const dayDiv = document.createElement('div');
         const formattedDate = year + "-" + String(month + 1).padStart(2, '0') + "-" + String(day).padStart(2, '0');
-
         const eventData = eventsData[formattedDate];
 
         if (eventData && eventData.icon) {
@@ -156,13 +220,11 @@ function renderCalendar() {
             }
 
             const eventPreview = document.getElementById('event-preview');
-
             if (eventData && eventPreview) {
                 document.getElementById('event-title').textContent = eventData.title;
                 document.getElementById('event-image').src = eventData.image;
                 document.getElementById('event-description').textContent = eventData.description;
                 document.getElementById('event-link').href = eventData.link;
-                
                 eventPreview.style.display = "block";
             } else if (eventPreview) {
                 eventPreview.style.display = "none";
@@ -187,7 +249,7 @@ document.getElementById('next-month')?.addEventListener('click', () => {
 
 
 // ==========================================
-// 4. ENVOI DU FORMULAIRE DE SATISFACTION
+// 5. ENVOI DU FORMULAIRE DE SATISFACTION
 // ==========================================
 const workshopForm = document.getElementById('workshop-form');
 const formMessage = document.getElementById('form-message');
@@ -238,5 +300,5 @@ if (workshopForm) {
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
     renderCalendar();
+    updateAuthUI();
 });
-
