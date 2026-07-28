@@ -126,7 +126,7 @@ function updateAuthUI() {
 // 3. CARROUSEL CORRIGÉ (SÉCURISÉ)
 // ==========================================
 const slides = [
-    { image: "assets/images/coraline.jpg", tagLine: "Questionnaire satisfaction <span>en ligne</span>" },
+    { image: "assets/images/slideshow/coraline.jpg", tagLine: "Questionnaire satisfaction <span>en ligne</span>" },
     { image: "assets/images/slideshow/slide2.jpg", tagLine: "Ateliers et activités <span>toute l'année</span>" }
 ];
 

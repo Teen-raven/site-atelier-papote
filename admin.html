@@ -2,34 +2,83 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Espace Administration</title>
-    <link rel="stylesheet" href="style.css">
     <style>
-        body { font-family: sans-serif; background: #f8fafc; padding: 20px; }
-        .admin-card { background: white; max-width: 500px; margin: 40px auto; padding: 25px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        .btn-back { display: inline-block; margin-bottom: 15px; color: #0284c7; text-decoration: none; font-weight: bold; }
+        body { font-family: system-ui, sans-serif; background-color: #f8fafc; padding: 20px; color: #1e293b; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; }
+        .btn { background: #0284c7; color: white; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-weight: bold; border: none; cursor: pointer; }
+        .btn-danger { background: #ef4444; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { border: 1px solid #cbd5e1; padding: 10px; text-align: left; }
+        th { background: #f1f5f9; }
+        .badge { background: #e0f2fe; color: #0369a1; padding: 4px 8px; border-radius: 4px; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <div class="admin-card">
-        <a href="index.html" class="btn-back">← Retour au site</a>
-        <h2>Espace Administration 🛠️</h2>
-
-        <div id="admin-content">
-            <p><strong>Bienvenue sur votre espace d'administration !</strong></p>
-            <p>Connecté en tant que responsable du site.</p>
+    <div class="container">
+        <div class="header">
+            <h2>🛠️ Tableau de bord Administrateur</h2>
+            <a href="index.html" class="btn">← Retour au site</a>
         </div>
+
+        <h3>Inscriptions & Réponses reçues :</h3>
+        <button id="btn-clear" class="btn btn-danger" style="margin-bottom: 15px;">Effacer les données</button>
+
+        <table id="submissions-table">
+            <thead>
+                <tr>
+                    <th>Date d'envoi</th>
+                    <th>Nom / Surnom</th>
+                    <th>Email</th>
+                    <th>Satisfaction</th>
+                    <th>Date Atelier</th>
+                </tr>
+            </thead>
+            <tbody id="table-body">
+                </tbody>
+        </table>
     </div>
 
     <script>
-        // Vérification d'accès Admin
+        // Vérification de la session Admin
         const session = JSON.parse(localStorage.getItem('user_session'));
         if (!session || !session.isAdmin) {
-            alert("Accès réservé aux administrateurs !");
+            alert("Accès réservé à l'administrateur !");
             window.location.href = "index.html";
         }
+
+        // Affichage des données du questionnaire
+        function loadSubmissions() {
+            const tbody = document.getElementById('table-body');
+            const submissions = JSON.parse(localStorage.getItem('form_submissions')) || [];
+
+            if (submissions.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">Aucune inscription reçue pour le moment.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = submissions.map(sub => `
+                <tr>
+                    <td><small>${sub.submittedAt}</small></td>
+                    <td><strong>${sub.name}</strong></td>
+                    <td>${sub.email}</td>
+                    <td><span class="badge">${sub.satisfaction}</span></td>
+                    <td>${sub.eventDate}</td>
+                </tr>
+            `).join('');
+        }
+
+        document.getElementById('btn-clear').addEventListener('click', () => {
+            if (confirm("Voulez-vous vraiment effacer toutes les réponses enregistrées ?")) {
+                localStorage.removeItem('form_submissions');
+                loadSubmissions();
+            }
+        });
+
+        loadSubmissions();
     </script>
 </body>
 </html>
-
