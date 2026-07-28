@@ -5,15 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Espace Administration</title>
     <style>
-        body { font-family: system-ui, sans-serif; background-color: #f8fafc; padding: 20px; color: #1e293b; }
-        .container { max-width: 900px; margin: 0 auto; background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; }
+        body { font-family: system-ui, sans-serif; background-color: #0f172a; color: #f8fafc; padding: 20px; }
+        .container { max-width: 950px; margin: 0 auto; background: #1e293b; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; border-bottom: 1px solid #334155; padding-bottom: 15px; }
         .btn { background: #0284c7; color: white; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-weight: bold; border: none; cursor: pointer; }
         .btn-danger { background: #ef4444; }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th, td { border: 1px solid #cbd5e1; padding: 10px; text-align: left; }
-        th { background: #f1f5f9; }
-        .badge { background: #e0f2fe; color: #0369a1; padding: 4px 8px; border-radius: 4px; font-weight: bold; }
+        .btn-sm { padding: 4px 8px; font-size: 12px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; margin-bottom: 30px; }
+        th, td { border: 1px solid #334155; padding: 12px; text-align: left; }
+        th { background: #0f172a; color: #38bdf8; }
+        .avatar-img { width: 35px; height: 35px; border-radius: 50%; object-fit: cover; vertical-align: middle; margin-right: 8px; }
+        .badge { background: #0284c7; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 12px; }
     </style>
 </head>
 <body>
@@ -24,39 +26,86 @@
             <a href="index.html" class="btn">← Retour au site</a>
         </div>
 
-        <h3>Inscriptions & Réponses reçues :</h3>
-        <button id="btn-clear" class="btn btn-danger" style="margin-bottom: 15px;">Effacer les données</button>
+        <h3>👥 Utilisateurs inscrits</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Avatar</th>
+                    <th>Pseudo</th>
+                    <th>Date d'inscription</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="users-table-body">
+                </tbody>
+        </table>
 
-        <table id="submissions-table">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h3>📋 Inscriptions & Réponses reçues</h3>
+            <button id="btn-clear-submissions" class="btn btn-danger btn-sm">Effacer les réponses</button>
+        </div>
+
+        <table>
             <thead>
                 <tr>
                     <th>Date d'envoi</th>
-                    <th>Nom / Surnom</th>
-                    <th>Email</th>
+                    <th>Pseudo</th>
                     <th>Satisfaction</th>
                     <th>Date Atelier</th>
                 </tr>
             </thead>
-            <tbody id="table-body">
+            <tbody id="submissions-table-body">
                 </tbody>
         </table>
     </div>
 
     <script>
-        // Vérification de la session Admin
+        // 1. Vérification accès Admin
         const session = JSON.parse(localStorage.getItem('user_session'));
         if (!session || !session.isAdmin) {
             alert("Accès réservé à l'administrateur !");
             window.location.href = "index.html";
         }
 
-        // Affichage des données du questionnaire
+        // 2. Charger les Utilisateurs
+        function loadUsers() {
+            const tbody = document.getElementById('users-table-body');
+            const users = JSON.parse(localStorage.getItem('registered_users')) || [];
+
+            if (users.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#94a3b8;">Aucun utilisateur inscrit pour le moment.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = users.map(user => `
+                <tr>
+                    <td><img src="${user.avatar}" class="avatar-img" alt="avatar"></td>
+                    <td><strong>${user.username}</strong></td>
+                    <td><small>${user.createdAt || 'N/A'}</small></td>
+                    <td>
+                        <button class="btn btn-danger btn-sm" onclick="deleteUser(${user.id})">❌ Supprimer</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Supprimer un utilisateur
+        function deleteUser(userId) {
+            if (confirm("Voulez-vous vraiment supprimer cet utilisateur ?")) {
+                let users = JSON.parse(localStorage.getItem('registered_users')) || [];
+                users = users.filter(u => u.id !== userId);
+                localStorage.setItem('registered_users', JSON.stringify(users));
+                loadUsers();
+            }
+        }
+
+        // 3. Charger les Réponses au Questionnaire
         function loadSubmissions() {
-            const tbody = document.getElementById('table-body');
+            const tbody = document.getElementById('submissions-table-body');
             const submissions = JSON.parse(localStorage.getItem('form_submissions')) || [];
 
             if (submissions.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">Aucune inscription reçue pour le moment.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#94a3b8;">Aucune inscription reçue pour le moment.</td></tr>`;
                 return;
             }
 
@@ -64,20 +113,21 @@
                 <tr>
                     <td><small>${sub.submittedAt}</small></td>
                     <td><strong>${sub.name}</strong></td>
-                    <td>${sub.email}</td>
                     <td><span class="badge">${sub.satisfaction}</span></td>
                     <td>${sub.eventDate}</td>
                 </tr>
             `).join('');
         }
 
-        document.getElementById('btn-clear').addEventListener('click', () => {
-            if (confirm("Voulez-vous vraiment effacer toutes les réponses enregistrées ?")) {
+        document.getElementById('btn-clear-submissions').addEventListener('click', () => {
+            if (confirm("Voulez-vous effacer l'historique des réponses ?")) {
                 localStorage.removeItem('form_submissions');
                 loadSubmissions();
             }
         });
 
+        // Chargement initial
+        loadUsers();
         loadSubmissions();
     </script>
 </body>
