@@ -7,7 +7,7 @@ const eventsData = {
         title: "03 Août - Film, Débat, Repas & Just Dance",
         image: "assets/images/coraline.jpg",
         description: "Matin : Projection du film & débat. Midi : Repas partagé. Après-midi : Session Just Dance !",
-        link: "pages/3-aout-film.html"
+        link: "pages/3aout.html"
     }
 };
 
@@ -127,7 +127,7 @@ function updateAuthUI() {
 // ==========================================
 const slides = [
     { image: "assets/images/slideshow/coraline.jpg", tagLine: "Questionnaire satisfaction <span>en ligne</span>" },
-    { image: "assets/images/slideshow/slide2.jpg", tagLine: "Ateliers et activités <span>toute l'année</span>" }
+    { image: "assets/images/slideshow/coraline2.jpg", tagLine: "Ateliers et activités <span>toute l'année</span>" }
 ];
 
 const bannerImg = document.getElementById('banner-img');
