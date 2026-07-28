@@ -13,6 +13,74 @@ const eventsData = {
 
 
 // ==========================================
+// 2. GESTION DU CARROUSEL / SLIDESHOW
+// ==========================================
+const slides = [
+	{
+		image: "coraline.jpg",
+		tagLine: "Questionnaire satisfaction <span>en ligne</span>"
+	},
+	{
+		image: "slide2.jpg",
+		tagLine: "Impressions tous formats <span>en atelier et en ligne</span>"
+	},
+	{
+		image: "slide3.jpg",
+		tagLine: "Grand choix de visuels <span>pour tous vos besoins</span>"
+	}
+];
+
+const bannerImg = document.getElementById('banner-img');
+const bannerTxt = document.getElementById('banner-txt');
+const dotsContainer = document.getElementById('dots');
+
+let currentIndex = 0;
+
+function createDots() {
+	if (!dotsContainer) return;
+	dotsContainer.innerHTML = '';
+	slides.forEach((_, index) => {
+		const dot = document.createElement('div');
+		dot.classList.add('dot');
+		if (index === currentIndex) {
+			dot.classList.add('dot_selected');
+		}
+		dot.addEventListener('click', () => {
+			currentIndex = index;
+			updateSlide();
+		});
+		dotsContainer.appendChild(dot);
+	});
+}
+
+function updateSlide() {
+	if (bannerImg) bannerImg.src = "./assets/images/slideshow/" + slides[currentIndex].image;
+	if (bannerTxt) bannerTxt.innerHTML = slides[currentIndex].tagLine;
+	
+	const dots = document.querySelectorAll('.dot');
+	dots.forEach((dot, index) => {
+		if (index === currentIndex) {
+			dot.classList.add('dot_selected');
+		} else {
+			dot.classList.remove('dot_selected');
+		}
+	});
+}
+
+function changeSlide(direction) {
+	currentIndex += direction;
+
+	if (currentIndex < 0) {
+		currentIndex = slides.length - 1;
+	} else if (currentIndex >= slides.length) {
+		currentIndex = 0;
+	}
+
+	updateSlide();
+}
+
+createDots();
+// ==========================================
 // 2. GESTION DE LA CONNEXION (USER & ADMIN)
 // ==========================================
 const modal = document.getElementById('login-modal');
@@ -111,50 +179,7 @@ function updateAuthUI() {
 
 
 // ==========================================
-// 3. GESTION DU CARROUSEL / SLIDESHOW
-// ==========================================
-const slides = [
-	{ image: "coraline.jpg", tagLine: "Questionnaire satisfaction <span>en ligne</span>" },
-	{ image: "slide2.jpg", tagLine: "Impressions tous formats <span>en atelier et en ligne</span>" },
-	{ image: "slide3.jpg", tagLine: "Grand choix de visuels <span>pour tous vos besoins</span>" }
-];
-
-const bannerImg = document.getElementById('banner-img');
-const bannerTxt = document.getElementById('banner-txt');
-const dotsContainer = document.getElementById('dots');
-let currentIndex = 0;
-
-function createDots() {
-	if (!dotsContainer) return;
-	dotsContainer.innerHTML = '';
-	slides.forEach((_, index) => {
-		const dot = document.createElement('div');
-		dot.classList.add('dot');
-		if (index === currentIndex) dot.classList.add('dot_selected');
-		dot.addEventListener('click', () => {
-			currentIndex = index;
-			updateSlide();
-		});
-		dotsContainer.appendChild(dot);
-	});
-}
-
-function updateSlide() {
-	if (bannerImg) bannerImg.src = "./assets/images/slideshow/" + slides[currentIndex].image;
-	if (bannerTxt) bannerTxt.innerHTML = slides[currentIndex].tagLine;
-	
-	const dots = document.querySelectorAll('.dot');
-	dots.forEach((dot, index) => {
-		if (index === currentIndex) dot.classList.add('dot_selected');
-		else dot.classList.remove('dot_selected');
-	});
-}
-
-createDots();
-
-
-// ==========================================
-// 4. GESTION DU CALENDRIER INTERACTIF
+// 3. GESTION DU CALENDRIER INTERACTIF
 // ==========================================
 const monthNames = [
     "Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
@@ -169,17 +194,22 @@ function renderCalendar() {
     const month = currentDate.getMonth();
 
     const monthYearElement = document.getElementById('calendar-month-year');
-    if (monthYearElement) monthYearElement.textContent = monthNames[month] + " " + year;
+    if (monthYearElement) {
+        monthYearElement.textContent = monthNames[month] + " " + year;
+    }
 
     const daysContainer = document.getElementById('calendar-days');
     if (!daysContainer) return;
 
     daysContainer.innerHTML = '';
 
+    // Décalage pour commencer par le Lundi (Lundi = 0, Dimanche = 6)
     let firstDayIndex = new Date(year, month, 1).getDay();
     firstDayIndex = (firstDayIndex === 0) ? 6 : firstDayIndex - 1;
+
     const totalDays = new Date(year, month + 1, 0).getDate();
 
+    // Cases vides pour décaler le 1er jour du mois
     for (let i = 0; i < firstDayIndex; i++) {
         const emptyDiv = document.createElement('div');
         emptyDiv.classList.add('empty');
@@ -188,9 +218,11 @@ function renderCalendar() {
 
     const today = new Date();
 
+    // Remplissage des jours
     for (let day = 1; day <= totalDays; day++) {
         const dayDiv = document.createElement('div');
         const formattedDate = year + "-" + String(month + 1).padStart(2, '0') + "-" + String(day).padStart(2, '0');
+
         const eventData = eventsData[formattedDate];
 
         if (eventData && eventData.icon) {
@@ -220,11 +252,13 @@ function renderCalendar() {
             }
 
             const eventPreview = document.getElementById('event-preview');
+
             if (eventData && eventPreview) {
                 document.getElementById('event-title').textContent = eventData.title;
                 document.getElementById('event-image').src = eventData.image;
                 document.getElementById('event-description').textContent = eventData.description;
                 document.getElementById('event-link').href = eventData.link;
+                
                 eventPreview.style.display = "block";
             } else if (eventPreview) {
                 eventPreview.style.display = "none";
@@ -249,7 +283,7 @@ document.getElementById('next-month')?.addEventListener('click', () => {
 
 
 // ==========================================
-// 5. ENVOI DU FORMULAIRE DE SATISFACTION
+// 4. ENVOI DU FORMULAIRE DE SATISFACTION
 // ==========================================
 const workshopForm = document.getElementById('workshop-form');
 const formMessage = document.getElementById('form-message');
@@ -300,5 +334,5 @@ if (workshopForm) {
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
     renderCalendar();
-    updateAuthUI();
 });
+
