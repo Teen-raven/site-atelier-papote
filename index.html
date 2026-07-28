@@ -1,115 +1,208 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-	<meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>Questionnaire satisfaction atelier papote</title>
-	<link rel="stylesheet" href="./style.css">
-	<link rel="preconnect" href="https://fonts.googleapis.com">
-	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-	<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Roboto+Slab:wght@400;900&display=swap" rel="stylesheet">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Atelier Papote</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* Barre du haut */
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #0f172a;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #38bdf8;
+        }
+        .auth-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        .btn-auth {
+            background-color: #0284c7;
+            color: white;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        .btn-auth:hover { background-color: #0369a1; }
+        .btn-admin { background-color: #e11d48; }
+        .btn-admin:hover { background-color: #be123c; }
+
+        /* Style des Modales (Pop-ups) */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 400px;
+            color: #333;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        .close-modal {
+            float: right;
+            cursor: pointer;
+            font-size: 22px;
+            font-weight: bold;
+            color: #666;
+        }
+        .avatar-preview {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            margin: 10px auto;
+            display: block;
+            object-fit: cover;
+            border: 2px solid #0284c7;
+        }
+    </style>
 </head>
 <body>
-
-<header class="container">
-	<h1>
-		<img class="logo"  alt="Print it ! Impressions d'entreprises">
-	</h1>
-</header>
-
-<main>
 
     <div class="container">
         <div class="top-bar">
             <div id="auth-status">
                 <span>Bienvenue sur Atelier Papote !</span>
             </div>
-            <div>
-                <button id="btn-open-login" class="btn-auth">Se connecter</button>
-                <a id="btn-admin-space" href="admin.html" class="btn-auth" style="display: none; background-color: #e11d48; text-decoration: none; margin-left: 5px;">Espace Admin 🛠️</a>
+            <div class="auth-buttons" id="auth-actions">
+                <button id="btn-open-register" class="btn-auth">Créer un compte</button>
+                <button id="btn-open-admin-login" class="btn-auth btn-admin">Connexion Admin 🛠️</button>
             </div>
         </div>
     </div>
 
-	<div class="form-group container">
-		<div class="calendar-header">
-			<button type="button" class="carousel-arrow left-arrow" onclick="changeSlide(-1)">&lt;</button>
-			<img id="banner-img" class="banner-img" src="./assets/images/slideshow/coraline.jpg" alt="Banner Print-it">
-			<button type="button" class="carousel-arrow right-arrow" onclick="changeSlide(1)">&gt;</button>
-			<div class="dots" id="dots"></div>
-		</div>
-		<div id="banner-txt" class="banner-txt">Questionnaire satisfaction <span>en ligne</span></div>
-	</div>
+    <header class="container">
+        <div id="banner" style="position: relative; text-align: center;">
+            <img id="banner-img" src="assets/images/coraline.jpg" alt="Bannière Atelier Papote" style="width: 100%; height: auto; max-height: 350px; object-fit: cover; border-radius: 8px;">
+            <p id="banner-txt" style="margin-top: 10px; font-weight: bold;">Questionnaire satisfaction <span>en ligne</span></p>
+            <div id="dots" style="display: flex; justify-content: center; gap: 8px; margin-top: 10px;"></div>
+        </div>
+    </header>
 
-	<section id="questionnaire-section" class="container">
-		<div>
-			<h2>Questionnaire et inscription</h2>
-			
-			<form id="workshop-form">
-				<div class="form-group">
-					<label for="name">Votre surnom :</label>
-					<input type="text" id="name" name="name" required placeholder="Ex: Pommni">
-				</div>
+    <main class="container">
+        <h2>Questionnaire et inscription</h2>
 
-				<div class="form-group">
-					<label for="email">Votre Adresse Email :</label>
-					<input type="email" id="email" name="email" required placeholder="ex: jean@mail.com">
-				</div>
+        <form id="workshop-form">
+            <div class="form-group">
+                <label for="name">Votre surnom :</label>
+                <input type="text" id="name" placeholder="Ex: Pommni" required>
+            </div>
 
-				<div class="form-group">
-					<label for="satisfaction">Comment évaluez-vous votre satisfaction ?</label>
-					<select id="satisfaction" name="satisfaction" required>
-						<option value="">-- Choisissez une option --</option>
-						<option value="Très satisfait">Très satisfait</option>
-						<option value="Satisfait">Satisfait</option>
-						<option value="Moyen">Moyen</option>
-						<option value="Déçu">Déçu</option>
-					</select>
-				</div>
+            <div class="form-group">
+                <label for="email">Votre Adresse Email :</label>
+                <input type="email" id="email" placeholder="ex.jean@mail.com" required>
+            </div>
 
-				<div class="form-group">
-					<label>Sélectionnez la date de l'atelier dans le calendrier :</label>
+            <div class="form-group">
+                <label for="satisfaction">Comment évaluez-vous votre satisfaction ?</label>
+                <select id="satisfaction" required>
+                    <option value="Très satisfait">Très satisfait</option>
+                    <option value="Satisfait">Satisfait</option>
+                    <option value="Neutre">Neutre</option>
+                    <option value="Insatisfait">Insatisfait</option>
+                </select>
+            </div>
 
-					<div class="calendar-container">
-						<div class="calendar-header">
-							<button type="button" id="prev-month">&lt;</button>
-							<h3 id="calendar-month-year"></h3>
-							<button type="button" id="next-month">&gt;</button>
-						</div>
+            <div class="form-group">
+                <label>Sélectionnez la date de l'atelier dans le calendrier :</label>
+                
+                <div class="calendar-container">
+                    <div class="calendar-header">
+                        <button type="button" id="prev-month">&lt;</button>
+                        <span id="calendar-month-year">Août 2026</span>
+                        <button type="button" id="next-month">&gt;</button>
+                    </div>
+                    
+                    <div class="calendar-weekdays">
+                        <div>Lun</div><div>Mar</div><div>Mer</div><div>Jeu</div><div>Ven</div><div>Sam</div><div>Dim</div>
+                    </div>
+                    
+                    <div id="calendar-days" class="calendar-days"></div>
+                </div>
 
-						<div class="calendar-weekdays">
-							<div>Lun</div>
-							<div>Mar</div>
-							<div>Mer</div>
-							<div>Jeu</div>
-							<div>Ven</div>
-							<div>Sam</div>
-							<div>Dim</div>
-						</div>
+                <input type="hidden" id="selected-date" name="selected-date">
+                <p id="selected-date-display" class="selected-date-text">Aucune date sélectionnée</p>
+            </div>
 
-						<div class="calendar-days" id="calendar-days"></div>
-						
-						<p id="selected-date-display">Date choisie : <span>Aucune date sélectionnée</span></p>
-						<input type="hidden" id="selected-date" name="eventDate" required>
-					</div>
+            <div id="event-preview" style="display: none;" class="event-card">
+                <h3 id="event-title"></h3>
+                <img id="event-image" src="" alt="Affiche de l'événement" style="max-width: 100%; height: auto; border-radius: 8px;">
+                <p id="event-description"></p>
+                <a id="event-link" href="#" class="btn-event-page" target="_blank">Voir le questionnaire & recettes ➔</a>
+            </div>
 
-					<div id="event-preview" class="event-preview-card" style="display: none;">
-						<h3 id="event-title"></h3>
-						<img id="event-image" src="" alt="Affiche de l'événement" style="max-width: 200px; border-radius: 8px;">
-						<p id="event-description"></p>
-						<a id="event-link" href="#" class="btn-event-page">Voir le questionnaire & recettes ➔</a>
-					</div>
-				</div>
+            <button type="submit" class="btn-submit">Envoyer mon inscription</button>
+            <p id="form-message" style="margin-top: 15px; font-weight: bold;"></p>
+        </form>
+    </main>
 
-				<button type="submit" class="btn-submit">Envoyer mon inscription</button>
-				<p id="form-message"></p>
-			</form>
-		</div>
-	</section>
-</main>
+    <div id="register-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" class="close-register">&times;</span>
+            <h3>Créer un compte</h3>
+            
+            <div class="form-group">
+                <label for="reg-username">Votre Pseudo / Surnom :</label>
+                <input type="text" id="reg-username" placeholder="Ex: Alex" required>
+            </div>
 
-<script src="script.js"></script>
-<script src="script.js?v=2"></script>
+            <div class="form-group">
+                <label for="reg-avatar">Lien vers votre photo/avatar (URL) :</label>
+                <input type="text" id="reg-avatar" placeholder="https://.../photo.jpg">
+                <small style="color: #666; display: block; margin-top: 4px;">Si laissé vide, une image sera créée automatiquement !</small>
+            </div>
 
+            <img id="avatar-preview-img" class="avatar-preview" src="https://api.dicebear.com/7.x/bottts/svg?seed=Papote" alt="Aperçu Avatar">
+
+            <button id="btn-submit-register" class="btn-submit" style="width: 100%; margin-top: 10px;">Enregistrer mon compte</button>
+        </div>
+    </div>
+
+    <div id="admin-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" class="close-admin">&times;</span>
+            <h3 style="color: #e11d48;">Connexion Administrateur</h3>
+            
+            <div class="form-group">
+                <label for="admin-pass">Mot de passe Admin :</label>
+                <input type="password" id="admin-pass" placeholder="Entrez le mot de passe">
+            </div>
+
+            <button id="btn-submit-admin" class="btn-submit" style="width: 100%; margin-top: 10px; background-color: #e11d48;">Se connecter en Admin</button>
+            <p id="admin-error-msg" style="color: red; margin-top: 10px; font-weight: bold; text-align: center; display: none;"></p>
+        </div>
+    </div>
+
+    <script src="script.js?v=5"></script>
 </body>
 </html>

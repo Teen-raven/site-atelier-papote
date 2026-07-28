@@ -2,130 +2,34 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Espace Administration - Atelier Papote</title>
+    <title>Espace Administration</title>
     <link rel="stylesheet" href="style.css">
     <style>
-        .admin-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-        .admin-table th, .admin-table td {
-            border: 1px solid #cbd5e1;
-            padding: 10px;
-            text-align: left;
-        }
-        .admin-table th {
-            background-color: #0284c7;
-            color: white;
-        }
-        .admin-table tr:nth-child(even) {
-            background-color: #f8fafc;
-        }
-        .login-box {
-            max-width: 400px;
-            margin: 50px auto;
-            padding: 20px;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-        }
+        body { font-family: sans-serif; background: #f8fafc; padding: 20px; }
+        .admin-card { background: white; max-width: 500px; margin: 40px auto; padding: 25px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .btn-back { display: inline-block; margin-bottom: 15px; color: #0284c7; text-decoration: none; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <main class="container">
-        <h2>Espace Administration</h2>
+    <div class="admin-card">
+        <a href="index.html" class="btn-back">← Retour au site</a>
+        <h2>Espace Administration 🛠️</h2>
 
-        <div id="login-section" class="login-box">
-            <h3>Connexion Admin</h3>
-            <div class="form-group">
-                <label for="admin-password">Mot de passe :</label>
-                <input type="password" id="admin-password" placeholder="Entrez le mot de passe">
-            </div>
-            <button id="btn-login" class="btn-submit">Se connecter</button>
-            <p id="login-error" style="color: red; margin-top: 10px;"></p>
+        <div id="admin-content">
+            <p><strong>Bienvenue sur votre espace d'administration !</strong></p>
+            <p>Connecté en tant que responsable du site.</p>
         </div>
-
-        <div id="data-section" style="display: none;">
-            <h3>Inscriptions & Réponses enregistrées</h3>
-            <button id="btn-refresh" class="btn-event-page" style="margin-bottom: 15px;">🔄 Rafraîchir</button>
-            
-            <table class="admin-table">
-                <thead>
-                    <tr>
-                        <th>Date Soumission</th>
-                        <th>Surnom</th>
-                        <th>Email</th>
-                        <th>Satisfaction</th>
-                        <th>Date d'Atelier</th>
-                    </tr>
-                </thead>
-                <tbody id="table-body">
-                    </tbody>
-            </table>
-        </div>
-    </main>
+    </div>
 
     <script>
-        const loginSection = document.getElementById('login-section');
-        const dataSection = document.getElementById('data-section');
-        const tableBody = document.getElementById('table-body');
-        const loginError = document.getElementById('login-error');
-        
-        let savedPassword = "";
-
-        async function fetchSubmissions(password) {
-            try {
-                const response = await fetch('http://localhost:3000/api/admin/submissions', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ password })
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    savedPassword = password;
-                    
-                    // Masque la connexion, affiche les données
-                    loginSection.style.display = 'none';
-                    dataSection.style.display = 'block';
-
-                    // Remplissage du tableau
-                    tableBody.innerHTML = '';
-                    if (data.length === 0) {
-                        tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Aucune donnée enregistrée pour le moment.</td></tr>';
-                    } else {
-                        data.forEach(item => {
-                            const row = document.createElement('tr');
-                            row.innerHTML = `
-                                <td>${item.dateSubmitted || '-'}</td>
-                                <td>${item.name}</td>
-                                <td>${item.email}</td>
-                                <td>${item.satisfaction}</td>
-                                <td>${item.eventDate}</td>
-                            `;
-                            tableBody.appendChild(row);
-                        });
-                    }
-                } else {
-                    loginError.textContent = "Mot de passe incorrect.";
-                }
-            } catch (err) {
-                console.error(err);
-                loginError.textContent = "Erreur de connexion au serveur.";
-            }
+        // Vérification d'accès Admin
+        const session = JSON.parse(localStorage.getItem('user_session'));
+        if (!session || !session.isAdmin) {
+            alert("Accès réservé aux administrateurs !");
+            window.location.href = "index.html";
         }
-
-        document.getElementById('btn-login').addEventListener('click', () => {
-            const pass = document.getElementById('admin-password').value;
-            fetchSubmissions(pass);
-        });
-
-        document.getElementById('btn-refresh').addEventListener('click', () => {
-            if (savedPassword) fetchSubmissions(savedPassword);
-        });
     </script>
 </body>
 </html>
+
