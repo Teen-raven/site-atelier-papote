@@ -7,7 +7,7 @@ const eventsData = {
         title: "03 Août - Film, Débat, Repas & Just Dance",
         image: "assets/images/coraline.jpg",
         description: "Matin : Projection du film & débat. Midi : Repas partagé. Après-midi : Session Just Dance !",
-        link: "pages/3aout.html"
+        link: "./3aout.html"
     }
 };
 
