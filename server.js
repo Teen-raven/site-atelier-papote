@@ -4,15 +4,15 @@ const fs = require('fs');
 const path = require('path');
 
 const app = express();
-const PORT = 3000;
-const ADMIN_PASSWORD = "MDF2025+"; // 👈 CHANGE CE MOT DE PASSE ICI !
+const PORT = process.env.PORT || 3000;
+const ADMIN_PASSWORD = "admin123";
 
+// Autoriser toutes les requêtes CORS (depuis GitHub Pages)
 app.use(cors());
 app.use(express.json());
 
 const DATA_FILE = path.join(__dirname, 'submissions.json');
 
-// Fonction pour lire les données existantes
 function getSubmissions() {
     if (!fs.existsSync(DATA_FILE)) {
         return [];
@@ -21,7 +21,12 @@ function getSubmissions() {
     return JSON.parse(data || "[]");
 }
 
-// 1. RECEVOIR UNE INSCRIPTION (Formulaire public)
+// Route racine pour vérifier que le serveur fonctionne
+app.get('/', (req, res) => {
+    res.send('Serveur Atelier Papote opérationnel ! 🚀');
+});
+
+// Route d'envoi du formulaire
 app.post('/api/submit-form', (req, res) => {
     const { name, email, satisfaction, eventDate } = req.body;
 
@@ -37,18 +42,16 @@ app.post('/api/submit-form', (req, res) => {
     const submissions = getSubmissions();
     submissions.push(newSubmission);
 
-    // Sauvegarde dans le fichier JSON
     fs.writeFileSync(DATA_FILE, JSON.stringify(submissions, null, 2));
 
     console.log('Nouvelle inscription enregistrée :', newSubmission);
     res.status(200).json({ message: 'Inscription réussie !' });
 });
 
-// 2. ESPACE ADMIN : RÉCUPÉRER TOUTES LES DONNÉES
+// Route admin pour consulter les résultats
 app.post('/api/admin/submissions', (req, res) => {
     const { password } = req.body;
 
-    // Vérification du mot de passe
     if (password !== ADMIN_PASSWORD) {
         return res.status(401).json({ message: 'Mot de passe incorrect' });
     }
@@ -58,5 +61,5 @@ app.post('/api/admin/submissions', (req, res) => {
 });
 
 app.listen(PORT, () => {
-    console.log(`Serveur prêt sur http://localhost:${PORT}`);
+    console.log(`Serveur démarré sur le port ${PORT}`);
 });
