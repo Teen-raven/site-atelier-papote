@@ -3,14 +3,12 @@
 // ==========================================
 const eventsData = {
     "2026-08-03": {
-        icon: "🎬", // Emoji ou icône affiché dans la case du calendrier
+        icon: "🎬",
         title: "03 Août - Film, Débat, Repas & Just Dance",
         image: "assets/images/coraline.jpg",
         description: "Matin : Projection du film & débat. Midi : Repas partagé. Après-midi : Session Just Dance !",
         link: "pages/3-aout-film.html"
     }
-    // Tu peux ajouter d'autres événements très facilement :
-    // , "2026-08-15": { icon: "🎨", title: "Atelier Peinture", image: "assets/images/peinture.jpg", description: "...", link: "..." }
 };
 
 
@@ -129,10 +127,8 @@ function renderCalendar() {
         const dayDiv = document.createElement('div');
         const formattedDate = year + "-" + String(month + 1).padStart(2, '0') + "-" + String(day).padStart(2, '0');
 
-        // Récupération des infos d'événement s'il y en a un ce jour-là
         const eventData = eventsData[formattedDate];
 
-        // S'il y a un atelier ce jour-là, on affiche le chiffre + l'icône
         if (eventData && eventData.icon) {
             dayDiv.innerHTML = `<span>${day}</span> <span class="event-icon">${eventData.icon}</span>`;
             dayDiv.classList.add('has-event');
@@ -140,31 +136,25 @@ function renderCalendar() {
             dayDiv.textContent = day;
         }
 
-        // Indiquer la case d'aujourd'hui
         if (day === today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
             dayDiv.classList.add('today');
         }
 
-        // Indiquer la case sélectionnée au clic
         if (formattedDate === selectedDateStr) {
             dayDiv.classList.add('selected');
         }
 
-        // Clic sur un jour
         dayDiv.addEventListener('click', () => {
             selectedDateStr = formattedDate;
 
-            // Mettre à jour le champ caché
             const hiddenInput = document.getElementById('selected-date');
             if (hiddenInput) hiddenInput.value = formattedDate;
 
-            // Mettre à jour le texte sous le calendrier
             const displayElement = document.getElementById('selected-date-display');
             if (displayElement) {
                 displayElement.innerHTML = 'Date choisie : <span>' + day + ' ' + monthNames[month] + ' ' + year + '</span>';
             }
 
-            // AFFICHER / CACHER L'APERÇU DE L'ÉVÉNEMENT (1er Clic)
             const eventPreview = document.getElementById('event-preview');
 
             if (eventData && eventPreview) {
@@ -173,12 +163,11 @@ function renderCalendar() {
                 document.getElementById('event-description').textContent = eventData.description;
                 document.getElementById('event-link').href = eventData.link;
                 
-                eventPreview.style.display = "block"; // Affiche l'aperçu du film
+                eventPreview.style.display = "block";
             } else if (eventPreview) {
-                eventPreview.style.display = "none"; // Masque si aucun événement
+                eventPreview.style.display = "none";
             }
 
-            // Rafraîchir le calendrier pour colorer la case cliquée
             renderCalendar();
         });
 
@@ -186,7 +175,6 @@ function renderCalendar() {
     }
 }
 
-// Écouteurs sur les boutons Mois Précédent / Mois Suivant
 document.getElementById('prev-month')?.addEventListener('click', () => {
     currentDate.setMonth(currentDate.getMonth() - 1);
     renderCalendar();
@@ -216,7 +204,8 @@ if (workshopForm) {
         };
 
         try {
-            const response = await fetch('http://localhost:3000/api/submit-form', {
+            // L'APPEL FETCH EST BIEN À L'INTÉRIEUR DU BLOC TRY ICI :
+            const response = await fetch('https://site-atelier-papote.onrender.com/api/submit-form', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(formData)
@@ -250,9 +239,4 @@ if (workshopForm) {
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
     renderCalendar();
-});
-const response=await fetch('https://site-atelier-papote.onrender.com/api/submit-form',{
-	method:'POST'
-	headers:{'Content-Type':'application/json'},
-	body:JSON.stringify(formData)
 });
