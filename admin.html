@@ -6,7 +6,7 @@
     <title>Espace Administration</title>
     <style>
         body { font-family: system-ui, sans-serif; background-color: #0f172a; color: #f8fafc; padding: 20px; }
-        .container { max-width: 950px; margin: 0 auto; background: #1e293b; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        .container { max-width: 950px; margin: 0 auto; background: #1e293b; padding: 25px; border-radius: 12px; }
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; border-bottom: 1px solid #334155; padding-bottom: 15px; }
         .btn { background: #0284c7; color: white; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-weight: bold; border: none; cursor: pointer; }
         .btn-danger { background: #ef4444; }
@@ -16,6 +16,7 @@
         th { background: #0f172a; color: #38bdf8; }
         .avatar-img { width: 35px; height: 35px; border-radius: 50%; object-fit: cover; vertical-align: middle; margin-right: 8px; }
         .badge { background: #0284c7; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 12px; }
+        .password-tag { background: #334155; color: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 13px; }
     </style>
 </head>
 <body>
@@ -32,12 +33,12 @@
                 <tr>
                     <th>Avatar</th>
                     <th>Pseudo</th>
-                    <th>Date d'inscription</th>
+                    <th>Mot de passe 🔑</th>
+                    <th>Inscription</th>
                     <th>Action</th>
                 </tr>
             </thead>
-            <tbody id="users-table-body">
-                </tbody>
+            <tbody id="users-table-body"></tbody>
         </table>
 
         <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -54,44 +55,39 @@
                     <th>Date Atelier</th>
                 </tr>
             </thead>
-            <tbody id="submissions-table-body">
-                </tbody>
+            <tbody id="submissions-table-body"></tbody>
         </table>
     </div>
 
     <script>
-        // 1. Vérification accès Admin
         const session = JSON.parse(localStorage.getItem('user_session'));
         if (!session || !session.isAdmin) {
             alert("Accès réservé à l'administrateur !");
             window.location.href = "index.html";
         }
 
-        // 2. Charger les Utilisateurs
         function loadUsers() {
             const tbody = document.getElementById('users-table-body');
             const users = JSON.parse(localStorage.getItem('registered_users')) || [];
 
             if (users.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#94a3b8;">Aucun utilisateur inscrit pour le moment.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#94a3b8;">Aucun utilisateur inscrit.</td></tr>`;
                 return;
             }
 
             tbody.innerHTML = users.map(user => `
                 <tr>
-                    <td><img src="${user.avatar}" class="avatar-img" alt="avatar"></td>
+                    <td><img src="${user.avatar}" class="avatar-img" onerror="this.src='https://api.dicebear.com/7.x/bottts/svg?seed=User'"></td>
                     <td><strong>${user.username}</strong></td>
+                    <td><span class="password-tag">${user.password}</span></td>
                     <td><small>${user.createdAt || 'N/A'}</small></td>
-                    <td>
-                        <button class="btn btn-danger btn-sm" onclick="deleteUser(${user.id})">❌ Supprimer</button>
-                    </td>
+                    <td><button class="btn btn-danger btn-sm" onclick="deleteUser(${user.id})">❌ Supprimer</button></td>
                 </tr>
             `).join('');
         }
 
-        // Supprimer un utilisateur
         function deleteUser(userId) {
-            if (confirm("Voulez-vous vraiment supprimer cet utilisateur ?")) {
+            if (confirm("Supprimer cet utilisateur ?")) {
                 let users = JSON.parse(localStorage.getItem('registered_users')) || [];
                 users = users.filter(u => u.id !== userId);
                 localStorage.setItem('registered_users', JSON.stringify(users));
@@ -99,13 +95,12 @@
             }
         }
 
-        // 3. Charger les Réponses au Questionnaire
         function loadSubmissions() {
             const tbody = document.getElementById('submissions-table-body');
             const submissions = JSON.parse(localStorage.getItem('form_submissions')) || [];
 
             if (submissions.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#94a3b8;">Aucune inscription reçue pour le moment.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#94a3b8;">Aucune réponse reçue.</td></tr>`;
                 return;
             }
 
@@ -119,14 +114,13 @@
             `).join('');
         }
 
-        document.getElementById('btn-clear-submissions').addEventListener('click', () => {
-            if (confirm("Voulez-vous effacer l'historique des réponses ?")) {
+        document.getElementById('btn-clear-submissions')?.addEventListener('click', () => {
+            if (confirm("Effacer toutes les réponses ?")) {
                 localStorage.removeItem('form_submissions');
                 loadSubmissions();
             }
         });
 
-        // Chargement initial
         loadUsers();
         loadSubmissions();
     </script>
