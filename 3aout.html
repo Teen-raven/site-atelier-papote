@@ -50,9 +50,9 @@
 
         <div class="music-card">
             <div id="music-banner" class="music-banner">
-                🎵 Cliquez n'importe où sur la page pour lancer la bande originale de Coraline !
+                🎵 Cliquez n'importe où sur la page pour démarrer la bande originale de Coraline !
             </div>
-            <iframe id="coraline-player" class="playlist-iframe" src="https://www.youtube.com/embed/videoseries?list=PL467E0A124976450A&enablejsapi=1&autoplay=1&mute=1" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+            <iframe id="coraline-player" class="playlist-iframe" src="https://www.youtube.com/embed/videoseries?list=OLAK5uy_nWlvQ-Z2uTrZ5-HjlAXI0mp3j9uwRiSvQ&enablejsapi=1&autoplay=1&mute=1" allow="autoplay; encrypted-media" allowfullscreen></iframe>
         </div>
 
         <h1>🎬 Atelier du 3 Août : Film, Débat, Repas & Just Dance</h1>
@@ -153,10 +153,10 @@
 
         document.addEventListener('click', () => {
             if (!musicStarted && iframe) {
-                // Activer le son (remplacer mute=1 par mute=0) au premier clic sur la page
+                // Dé-mute la vidéo et lance l'audio au premier clic
                 iframe.src = iframe.src.replace("mute=1", "mute=0");
                 if (musicBanner) {
-                    musicBanner.innerHTML = "🎧 Lecture en cours : Bande originale de Coraline 🎶";
+                    musicBanner.innerHTML = "🎧 Musique en cours : Coraline (Original Motion Picture Soundtrack) 🎶";
                     musicBanner.style.backgroundColor = "#16a34a";
                 }
                 musicStarted = true;
@@ -173,21 +173,21 @@
         btnOpenSurvey.addEventListener('click', () => {
             const userSession = JSON.parse(localStorage.getItem('user_session'));
 
-            // VÉRIFICATION CONNEXION : Si non connecté -> ouvre la modal de connexion
+            // Blocage si non connecté
             if (!userSession) {
-                alert("⚠️ Vous devez vous connecter pour donner votre avis !");
+                alert("⚠️ Vous devez être connecté(e) pour donner votre avis sur cet atelier !");
                 if (regModal) regModal.style.display = 'flex';
                 return;
             }
 
-            // Si connecté -> pré-remplit le pseudo et ouvre le questionnaire
+            // Remplissage automatique et ouverture
             nameInput.value = userSession.username;
             surveyModal.style.display = 'flex';
         });
 
         btnCloseSurvey.addEventListener('click', () => { surveyModal.style.display = 'none'; });
 
-        // 3. ENREGISTREMENT DE LA RÉPONSE POUR L'ADMIN
+        // 3. ENREGISTREMENT POUR L'ADMIN
         document.getElementById('survey-form').addEventListener('submit', (e) => {
             e.preventDefault();
             const userSession = JSON.parse(localStorage.getItem('user_session'));
@@ -206,7 +206,7 @@
             localStorage.setItem('form_submissions', JSON.stringify(submissions));
 
             document.getElementById('survey-message').style.color = "#16a34a";
-            document.getElementById('survey-message').textContent = "✅ Merci ! Votre avis a été enregistré pour l'administrateur.";
+            document.getElementById('survey-message').textContent = "✅ Merci ! Votre avis a été transmis à l'administrateur.";
 
             setTimeout(() => {
                 surveyModal.style.display = 'none';
@@ -217,3 +217,4 @@
     </script>
 </body>
 </html>
+
