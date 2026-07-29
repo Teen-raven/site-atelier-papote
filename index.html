@@ -153,16 +153,7 @@
             </div>
 
  
-            <div class="form-group">
-                <label for="satisfaction">Comment évaluez-vous votre satisfaction ?</label>
-                <select id="satisfaction" required>
-                    <option value="Très satisfait">Très satisfait</option>
-                    <option value="Satisfait">Satisfait</option>
-                    <option value="Neutre">Neutre</option>
-                    <option value="Insatisfait">Insatisfait</option>
-                </select>
-            </div>
-
+        
             <div class="form-group">
                 <label>Sélectionnez la date de l'atelier dans le calendrier :</label>
                 
@@ -195,7 +186,19 @@
             <p id="form-message" style="margin-top: 15px; font-weight: bold;"></p>
         </form>
     </main>
-
+    <div class="form-group">
+                <label for="satisfaction">Comment évaluez-vous le site ?</label>
+                <select id="satisfaction" required>
+                    <option value="Très satisfait">Très bien</option>
+                    <option value="Satisfait">Bien</option>
+                    <option value="Neutre">A améliorer</option>
+                    <option value="Insatisfait">Pas super</option>
+                </select>
+            </div>
+<div class="form-group">
+                    <label>Un commentaire ou une idée pour l'améliorer?</label>
+                    <textarea id="survey-comment" rows="3" placeholder="Votre avis..."></textarea>
+                </div>
     <div id="register-modal" class="modal">
         <div class="modal-content">
             <span class="close-modal" class="close-register">&times;</span>
