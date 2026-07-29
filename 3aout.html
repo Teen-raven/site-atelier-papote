@@ -4,175 +4,153 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>3 Août - Atelier Papote</title>
-    <link rel="stylesheet" href="../style.css">
-    
     <style>
-        /* 1. APPLIQUER LE CURSEUR PERSONNALISÉ */
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f8fafc;
-            color: #0f172a;
-            padding: 20px;
-            /* Curseur personnalisé (remplace l'image si besoin) */
-            cursor: url('../assets/images/bouton.jpg'), auto;
-        }
-
-        a, button, input {
-            cursor: url('./assets/images/mon-curseur-hover.png'), pointer;
-        }
-
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-            background: white;
-            padding: 25px;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        }
-
-        /* BANNIÈRE MUSIQUE */
-        .music-banner {
-            background-color: #0284c7;
-            color: white;
-            padding: 12px;
-            text-align: center;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            font-weight: bold;
-            transition: background 0.3s;
-        }
-
-        /* SECTION RECETTES PDF */
-        .pdf-section {
-            margin-top: 30px;
-            background-color: #f1f5f9;
-            padding: 20px;
-            border-radius: 10px;
-            border-left: 5px solid #0284c7;
-        }
-
-        .pdf-card {
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
-            margin-top: 15px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-        }
-
-        .pdf-viewer {
-            width: 100%;
-            height: 400px;
-            border: 1px solid #cbd5e1;
-            border-radius: 6px;
-            margin-top: 10px;
-        }
-
-        .btn-download {
-            display: inline-block;
-            background-color: #16a34a;
-            color: white;
-            padding: 8px 15px;
-            border-radius: 6px;
-            text-decoration: none;
-            font-weight: bold;
-            margin-top: 10px;
-        }
+        body { font-family: Arial, sans-serif; background-color: #f8fafc; color: #0f172a; padding: 20px; cursor: url('../assets/images/mon-curseur.png'), auto; }
+        a, button, input, select { cursor: url('../assets/images/mon-curseur-hover.png'), pointer; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .music-banner { background-color: #0284c7; color: white; padding: 12px; text-align: center; border-radius: 8px; margin-bottom: 20px; font-weight: bold; }
+        .btn-action { display: inline-block; background-color: #16a34a; color: white; border: none; padding: 12px 20px; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; text-decoration: none; margin-top: 15px; }
+        .btn-back { display: inline-block; margin-bottom: 15px; color: #0284c7; text-decoration: none; font-weight: bold; }
         
-        .btn-back {
-            display: inline-block;
-            margin-bottom: 15px;
-            color: #0284c7;
-            text-decoration: none;
-            font-weight: bold;
-        }
+        /* STYLES RECETTES PDF */
+        .pdf-section { margin-top: 30px; background-color: #f1f5f9; padding: 20px; border-radius: 10px; border-left: 5px solid #0284c7; }
+        .pdf-card { background: white; padding: 15px; border-radius: 8px; margin-top: 15px; }
+        .pdf-viewer { width: 100%; height: 350px; border: 1px solid #cbd5e1; border-radius: 6px; margin-top: 10px; }
+
+        /* STYLES MODAL QUESTIONNAIRE */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 25px; border-radius: 12px; width: 90%; max-width: 450px; position: relative; box-shadow: 0 5px 20px rgba(0,0,0,0.2); }
+        .close-modal { position: absolute; top: 12px; right: 15px; font-size: 24px; cursor: pointer; color: #64748b; }
+        .form-group { margin-top: 15px; }
+        .form-group label { display: block; font-weight: bold; margin-bottom: 5px; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="top-bar">
-            <div id="auth-status">
-                <span>Bienvenue sur Atelier Papote !</span>
-            </div>
-            <div class="auth-buttons" id="auth-actions">
-                <button id="btn-open-register" class="btn-auth">Créer un compte</button>
-                <button id="btn-open-admin-login" class="btn-auth btn-admin">Connexion Admin 🛠️</button>
-            </div>
-        </div>
-    </div>
 
     <div class="container">
-        <a href="./index.html" class="btn-back">← Retour au calendrier</a>
+        <a href="../index.html" class="btn-back">← Retour au calendrier</a>
 
         <div id="music-banner" class="music-banner">
             🎵 Cliquez n'importe où sur la page pour lancer l'ambiance musicale !
         </div>
 
         <div style="display: none;">
-            <iframe 
-                id="youtube-player"
-                width="1" 
-                height="1" 
-                src="https://music.youtube.com/playlist?list=OLAK5uy_nWlvQ-Z2uTrZ5-HjlAXI0mp3j9uwRiSvQ" 
-                allow="autoplay">
-            </iframe>
+            <iframe id="youtube-player" width="1" height="1" src="https://www.youtube.com/embed/dQw4w9WgXcQ?enablejsapi=1&autoplay=1&mute=1" allow="autoplay"></iframe>
         </div>
 
         <h1>🎬 Atelier du 3 Août : Film, Débat, Repas & Just Dance</h1>
-        
-        <img src="./assets/images/coraline.jpg" alt="Affiche 3 Août" style="width: 100%; max-height: 350px; object-fit: cover; border-radius: 8px;" onerror="this.src='https://via.placeholder.com/800x350?text=Atelier+Papote'">
+        <img src="../assets/images/coraline.jpg" alt="Affiche 3 Août" style="width: 100%; max-height: 350px; object-fit: cover; border-radius: 8px;" onerror="this.src='https://via.placeholder.com/800x350?text=Atelier+Papote'">
 
-        <div style="margin-top: 20px; line-height: 1.6;">
-            <h3>Programme de la journée :</h3>
-            <ul>
-                <li><strong>Matin :</strong> Projection du film et débat participatif.</li>
-                <li><strong>Midi :</strong> Repas partagé avec les recettes préparées ensemble.</li>
-                <li><strong>Après-midi :</strong> Session de Just Dance déjantée !</li>
-            </ul>
+        <div style="text-align: center; margin: 20px 0;">
+            <button id="btn-open-survey" class="btn-action">⭐ Donner mon avis sur cet atelier</button>
         </div>
-
-        <hr style="margin: 30px 0; border: none; border-top: 1px solid #e2e8f0;">
 
         <section class="pdf-section">
             <h2>📖 Recettes de l'Atelier (PDF)</h2>
-            <p>Retrouvez et téléchargez ci-dessous les fiches recettes préparées pour l'événement :</p>
-
             <div class="pdf-card">
-                <h3>🍽️ Recette 1 : Le Menu Partagé du 3 Août</h3>
-                <p>Découvrez tous les ingrédients et étapes de notre repas.</p>
-                
-                <iframe class="pdf-viewer" src="./assets/pdf/gateaucoraline.pdf"></iframe>
-                
-                <br>
-                <a href="./assets/pdf/gateaucoraline.pdf" download class="btn-download">
-                    📥 Télécharger la recette (PDF)
-                </a>
+                <h3>🍽️ Recette du 3 Août</h3>
+                <iframe class="pdf-viewer" src="../assets/pdf/recette-3-aout.pdf"></iframe>
             </div>
+        </section>
+    </div>
 
-            </section>
+    <div id="survey-modal" class="modal-overlay">
+        <div class="modal-content">
+            <span id="btn-close-survey" class="close-modal">&times;</span>
+            <h2>📝 Questionnaire de Satisfaction</h2>
+            <p><small>Atelier : <strong>Film, Débat & Just Dance (3 Août)</strong></small></p>
 
+            <form id="survey-form">
+                <div class="form-group">
+                    <label>Votre Nom / Pseudo :</label>
+                    <input type="text" id="survey-name" required placeholder="Ex: Alex">
+                </div>
+
+                <div class="form-group">
+                    <label>Niveau de satisfaction :</label>
+                    <select id="survey-satisfaction" required>
+                        <option value="">-- Choisissez une note --</option>
+                        <option value="😍 Très satisfait">😍 Très satisfait</option>
+                        <option value="🙂 Satisfait">🙂 Satisfait</option>
+                        <option value="😐 Moyen">😐 Moyen</option>
+                        <option value="🙁 Déçu">🙁 Déçu</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Un commentaire ou une idée ?</label>
+                    <textarea id="survey-comment" rows="3" placeholder="Votre avis..."></textarea>
+                </div>
+
+                <button type="submit" class="btn-action" style="width: 100%; margin-top: 20px;">Envoyer mon avis</button>
+            </form>
+            <div id="survey-message" style="margin-top: 15px; font-weight: bold; text-align: center;"></div>
+        </div>
     </div>
 
     <script>
+        // 1. GESTION DE LA MUSIQUE
         const musicBanner = document.getElementById('music-banner');
         const iframe = document.getElementById('youtube-player');
         let musicStarted = false;
 
-        function startMusic() {
+        document.addEventListener('click', () => {
             if (!musicStarted && iframe) {
-                // Activer le son
-                let currentSrc = iframe.src;
-                iframe.src = currentSrc.replace("mute=1", "mute=0");
-                
+                iframe.src = iframe.src.replace("mute=1", "mute=0");
                 if (musicBanner) {
                     musicBanner.innerHTML = "🎶 Musique d'ambiance en cours de lecture...";
-                    musicBanner.style.backgroundColor = "#16a34a"; // Vert
+                    musicBanner.style.backgroundColor = "#16a34a";
                 }
                 musicStarted = true;
             }
-        }
+        });
 
-        // Se lance au premier clic de l'utilisateur n'importe où sur la page
-        document.addEventListener('click', startMusic);
+        // 2. GESTION DU MODAL QUESTIONNAIRE
+        const modal = document.getElementById('survey-modal');
+        const btnOpen = document.getElementById('btn-open-survey');
+        const btnClose = document.getElementById('btn-close-survey');
+        const surveyForm = document.getElementById('survey-form');
+        const nameInput = document.getElementById('survey-name');
+
+        // Pré-remplir le pseudo si l'utilisateur est connecté
+        btnOpen.addEventListener('click', () => {
+            const userSession = JSON.parse(localStorage.getItem('user_session'));
+            if (userSession && userSession.username) {
+                nameInput.value = userSession.username;
+            }
+            modal.style.display = 'flex';
+        });
+
+        btnClose.addEventListener('click', () => { modal.style.display = 'none'; });
+
+        // 3. ENREGISTREMENT DE LA RÉPONSE POUR L'ADMIN
+        surveyForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            const responseData = {
+                id: Date.now(),
+                workshopName: "Film, Débat & Just Dance (3 Août)",
+                name: nameInput.value || "Anonyme",
+                satisfaction: document.getElementById('survey-satisfaction').value,
+                comment: document.getElementById('survey-comment').value || "Aucun commentaire",
+                submittedAt: new Date().toLocaleString('fr-FR')
+            };
+
+            // Sauvegarde dans le LocalStorage
+            let submissions = JSON.parse(localStorage.getItem('form_submissions')) || [];
+            submissions.push(responseData);
+            localStorage.setItem('form_submissions', JSON.stringify(submissions));
+
+            document.getElementById('survey-message').style.color = "#16a34a";
+            document.getElementById('survey-message').textContent = "✅ Merci ! Votre avis a été transmis à l'administrateur.";
+
+            setTimeout(() => {
+                modal.style.display = 'none';
+                surveyForm.reset();
+                document.getElementById('survey-message').textContent = "";
+            }, 1800);
+        });
     </script>
 </body>
 </html>
