@@ -184,8 +184,9 @@
     </div>
 
     <script src="script.js"></script>
+    <script src="script.js"></script>
     <script>
-        // 1. GESTION ET RÉDUCTION DU LECTEUR MUSICAL
+        // 1. GESTION DU LECTEUR MUSICAL FLOTTANT
         const iframe = document.getElementById('coraline-player');
         const miniPlayer = document.getElementById('mini-player');
         const btnTogglePlayer = document.getElementById('btn-toggle-player');
@@ -200,24 +201,25 @@
         });
 
         // Bouton Réduire / Agrandir
-        btnTogglePlayer.addEventListener('click', (e) => {
-            e.stopPropagation(); // Évite de relancer l'événement de clic global
-            miniPlayer.classList.toggle('minimized');
-            if (miniPlayer.classList.contains('minimized')) {
-                btnTogglePlayer.textContent = "➕ Agrandir";
-            } else {
-                btnTogglePlayer.textContent = "➖ Réduire";
-            }
-        });
+        if (btnTogglePlayer) {
+            btnTogglePlayer.addEventListener('click', (e) => {
+                e.stopPropagation(); // Évite de déclencher d'autres événements
+                miniPlayer.classList.toggle('minimized');
+                btnTogglePlayer.textContent = miniPlayer.classList.contains('minimized') ? "➕ Agrandir" : "➖ Réduire";
+            });
+        }
 
-        // 2. OUVERTURE SÉCURISÉE DU QUESTIONNAIRE
+        // 2. OUVERTURE ET DÉCLENCHEMENT DU QUESTIONNAIRE
         const surveyModal = document.getElementById('survey-modal');
         const regModal = document.getElementById('register-modal');
         const btnOpenSurvey = document.getElementById('btn-open-survey');
         const btnCloseSurvey = document.getElementById('btn-close-survey');
+        const surveyForm = document.getElementById('survey-form');
         const nameInput = document.getElementById('survey-name');
+        const surveyMsg = document.getElementById('survey-message');
 
         btnOpenSurvey.addEventListener('click', () => {
+            // Vérification de la session
             const userSession = JSON.parse(localStorage.getItem('user_session'));
 
             if (!userSession) {
@@ -226,39 +228,60 @@
                 return;
             }
 
-            nameInput.value = userSession.username;
+            // Pré-remplissage automatique avec le pseudo connecté
+            if (nameInput) {
+                nameInput.value = userSession.username || userSession.email || "Utilisateur connecté";
+            }
+            
             surveyModal.style.display = 'flex';
         });
 
-        btnCloseSurvey.addEventListener('click', () => { surveyModal.style.display = 'none'; });
+        if (btnCloseSurvey) {
+            btnCloseSurvey.addEventListener('click', () => { 
+                surveyModal.style.display = 'none'; 
+            });
+        }
 
-        // 3. ENREGISTREMENT POUR L'ADMIN
-        document.getElementById('survey-form').addEventListener('submit', (e) => {
-            e.preventDefault();
-            const userSession = JSON.parse(localStorage.getItem('user_session'));
+        // 3. ENREGISTREMENT DE LA RÉPONSE
+        if (surveyForm) {
+            surveyForm.addEventListener('submit', (e) => {
+                e.preventDefault();
 
-            const responseData = {
-                id: Date.now(),
-                workshopName: "Film, Débat & Just Dance (3 Août)",
-                name: userSession ? userSession.username : nameInput.value,
-                satisfaction: document.getElementById('survey-satisfaction').value,
-                comment: document.getElementById('survey-comment').value || "Aucun commentaire",
-                submittedAt: new Date().toLocaleString('fr-FR')
-            };
+                const userSession = JSON.parse(localStorage.getItem('user_session'));
+                const userName = userSession ? userSession.username : (nameInput.value || "Anonyme");
+                const satisfactionValue = document.getElementById('survey-satisfaction').value;
+                const commentValue = document.getElementById('survey-comment').value;
 
-            let submissions = JSON.parse(localStorage.getItem('form_submissions')) || [];
-            submissions.push(responseData);
-            localStorage.setItem('form_submissions', JSON.stringify(submissions));
+                // Structure de la réponse pour l'admin
+                const responseData = {
+                    id: Date.now(),
+                    workshopName: "Film, Débat & Just Dance (3 Août)",
+                    name: userName,
+                    satisfaction: satisfactionValue,
+                    comment: commentValue.trim() !== "" ? commentValue : "Aucun commentaire",
+                    submittedAt: new Date().toLocaleString('fr-FR')
+                };
 
-            document.getElementById('survey-message').style.color = "#16a34a";
-            document.getElementById('survey-message').textContent = "✅ Merci ! Votre avis a été transmis à l'administrateur.";
+                // Sauvegarde dans le localStorage
+                let submissions = JSON.parse(localStorage.getItem('form_submissions')) || [];
+                submissions.push(responseData);
+                localStorage.setItem('form_submissions', JSON.stringify(submissions));
 
-            setTimeout(() => {
-                surveyModal.style.display = 'none';
-                document.getElementById('survey-form').reset();
-                document.getElementById('survey-message').textContent = "";
-            }, 1800);
-        });
+                // Notification de succès
+                if (surveyMsg) {
+                    surveyMsg.style.color = "#16a34a";
+                    surveyMsg.textContent = "✅ Merci ! Votre avis a bien été transmis à l'administrateur.";
+                }
+
+                // Fermeture automatique après 1.5 seconde
+                setTimeout(() => {
+                    surveyModal.style.display = 'none';
+                    surveyForm.reset();
+                    if (surveyMsg) surveyMsg.textContent = "";
+                }, 1500);
+            });
+        }
     </script>
+
 </body>
 </html>
