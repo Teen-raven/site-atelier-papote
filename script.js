@@ -12,102 +12,53 @@ const eventsData = {
 };
 
 // ==========================================
-// 2. GESTION DES MODALES & AUTHENTIFICATION
+// 2. GESTION DU STOCKAGE LOCAL (LocalStorage)
 // ==========================================
-const regModal = document.getElementById('register-modal');
-const adminModal = document.getElementById('admin-modal');
-
-const btnOpenRegister = document.getElementById('btn-open-register');
-const btnOpenAdmin = document.getElementById('btn-open-admin-login');
-
-const btnSubmitRegister = document.getElementById('btn-submit-register');
-const btnSubmitAdmin = document.getElementById('btn-submit-admin');
-
-const regUsername = document.getElementById('reg-username');
-const regAvatar = document.getElementById('reg-avatar');
-const adminPass = document.getElementById('admin-pass');
-const avatarPreviewImg = document.getElementById('avatar-preview-img');
-
-// Mettre à jour l'aperçu de l'avatar au changement
-regAvatar?.addEventListener('input', (e) => {
-    const url = e.target.value.trim();
-    if (url) {
-        avatarPreviewImg.src = url;
-    } else {
-        avatarPreviewImg.src = "https://api.dicebear.com/7.x/bottts/svg?seed=" + (regUsername.value || "Papote");
+function getUsers() {
+    try {
+        return JSON.parse(localStorage.getItem('registered_users')) || [];
+    } catch(e) {
+        return [];
     }
-});
+}
 
-regUsername?.addEventListener('input', (e) => {
-    if (!regAvatar.value.trim()) {
-        avatarPreviewImg.src = "https://api.dicebear.com/7.x/bottts/svg?seed=" + (e.target.value || "Papote");
+function saveUsers(users) {
+    localStorage.setItem('registered_users', JSON.stringify(users));
+}
+
+function getSubmissions() {
+    try {
+        return JSON.parse(localStorage.getItem('form_submissions')) || [];
+    } catch(e) {
+        return [];
     }
-});
+}
 
-// Ouverture / Fermeture des pop-ups
-btnOpenRegister?.addEventListener('click', () => { regModal.style.display = 'flex'; });
-btnOpenAdmin?.addEventListener('click', () => { adminModal.style.display = 'flex'; });
+function saveSubmissions(submissions) {
+    localStorage.setItem('form_submissions', JSON.stringify(submissions));
+}
 
-document.querySelectorAll('.close-modal').forEach(btn => {
-    btn.addEventListener('click', () => {
-        regModal.style.display = 'none';
-        adminModal.style.display = 'none';
-    });
-});
-
-// Valider Inscription Utilisateur
-btnSubmitRegister?.addEventListener('click', () => {
-    const pseudo = regUsername.value.trim();
-    if (!pseudo) {
-        alert("Veuillez entrer un pseudo !");
-        return;
-    }
-
-    const avatarUrl = regAvatar.value.trim() || "https://api.dicebear.com/7.x/bottts/svg?seed=" + pseudo;
-    const session = { username: pseudo, avatar: avatarUrl, isAdmin: false };
-    
-    localStorage.setItem('user_session', JSON.stringify(session));
-    regModal.style.display = 'none';
-    updateAuthUI();
-});
-
-// Valider Connexion Admin (Mot de passe: admin123)
-btnSubmitAdmin?.addEventListener('click', () => {
-    const pass = adminPass.value.trim();
-    const errorMsg = document.getElementById('admin-error-msg');
-
-    if (pass === 'admin123') { // 🔑 Mot de passe Admin
-        const session = { username: "Admin", avatar: "https://api.dicebear.com/7.x/bottts/svg?seed=Admin", isAdmin: true };
-        localStorage.setItem('user_session', JSON.stringify(session));
-        adminModal.style.display = 'none';
-        updateAuthUI();
-    } else {
-        if (errorMsg) {
-            errorMsg.textContent = "Mot de passe incorrect.";
-            errorMsg.style.display = "block";
-        }
-    }
-});
-
-// Mise à jour de l'affichage utilisateur
+// ==========================================
+// 3. AUTHENTIFICATION & INTERFACE UTILISATEUR
+// ==========================================
 function updateAuthUI() {
     const user = JSON.parse(localStorage.getItem('user_session'));
     const authStatus = document.getElementById('auth-status');
     const authActions = document.getElementById('auth-actions');
 
-    if (user) {
+    if (user && authStatus && authActions) {
         authStatus.innerHTML = `
-            <div class="user-profile">
-                <img src="${user.avatar}" alt="Avatar" class="user-avatar" onerror="this.src='https://api.dicebear.com/7.x/bottts/svg?seed=User'">
+            <div style="display:flex; align-items:center; gap:10px;">
+                <img src="${user.avatar}" style="width:38px; height:38px; border-radius:50%; object-fit:cover; border:2px solid #0284c7;" onerror="this.src='https://api.dicebear.com/7.x/bottts/svg?seed=User'">
                 <span>Bienvenue, <strong>${user.username}</strong> ${user.isAdmin ? '(Admin 🛠️)' : ''}</span>
             </div>
         `;
 
-        let adminBtnHtml = user.isAdmin ? `<a href="admin.html" class="btn-auth btn-admin">Page Admin ➔</a>` : '';
+        let adminBtn = user.isAdmin ? `<a href="admin.html" class="btn-auth" style="background-color:#e11d48; color:white; text-decoration:none; padding:8px 12px; border-radius:5px; font-weight:bold; margin-right:5px;">Page Admin ➔</a>` : '';
 
         authActions.innerHTML = `
-            ${adminBtnHtml}
-            <button id="btn-logout" class="btn-auth" style="background-color: #64748b;">Déconnexion</button>
+            ${adminBtn}
+            <button id="btn-logout" class="btn-auth" style="background:#64748b; color:white; border:none; padding:8px 12px; border-radius:5px; cursor:pointer;">Déconnexion</button>
         `;
 
         document.getElementById('btn-logout')?.addEventListener('click', () => {
@@ -115,27 +66,160 @@ function updateAuthUI() {
             location.reload();
         });
 
-        // Pré-remplir le formulaire d'inscription
         const nameInput = document.getElementById('name');
         if (nameInput && !user.isAdmin) nameInput.value = user.username;
     }
 }
 
+function setupAuth() {
+    const regModal = document.getElementById('register-modal');
+    const adminModal = document.getElementById('admin-modal');
+
+    // Ouverture des modales
+    document.getElementById('btn-open-register')?.addEventListener('click', () => { 
+        if(regModal) regModal.style.display = 'flex'; 
+    });
+    
+    document.getElementById('btn-open-admin-login')?.addEventListener('click', () => { 
+        if(adminModal) adminModal.style.display = 'flex'; 
+    });
+
+    // Fermeture des modales
+    document.querySelectorAll('.close-modal').forEach(btn => {
+        btn.addEventListener('click', () => {
+            if(regModal) regModal.style.display = 'none';
+            if(adminModal) adminModal.style.display = 'none';
+        });
+    });
+
+    // Gestion des onglets (Connexion vs Inscription)
+    const tabLogin = document.getElementById('tab-login');
+    const tabRegister = document.getElementById('tab-register');
+    const formLogin = document.getElementById('form-login');
+    const formRegister = document.getElementById('form-register');
+
+    if (tabLogin && tabRegister && formLogin && formRegister) {
+        tabLogin.addEventListener('click', () => {
+            tabLogin.style.borderBottom = "3px solid #0284c7";
+            tabRegister.style.borderBottom = "none";
+            formLogin.style.display = 'block';
+            formRegister.style.display = 'none';
+        });
+
+        tabRegister.addEventListener('click', () => {
+            tabRegister.style.borderBottom = "3px solid #16a34a";
+            tabLogin.style.borderBottom = "none";
+            formRegister.style.display = 'block';
+            formLogin.style.display = 'none';
+        });
+    }
+
+    // Gestion de la prévisualisation de l'avatar
+    const regUsername = document.getElementById('reg-username');
+    const regAvatar = document.getElementById('reg-avatar');
+    const avatarPreviewImg = document.getElementById('avatar-preview-img');
+
+    regAvatar?.addEventListener('input', (e) => {
+        const url = e.target.value.trim();
+        if (avatarPreviewImg) {
+            avatarPreviewImg.src = url || "https://api.dicebear.com/7.x/bottts/svg?seed=" + (regUsername?.value || "Papote");
+        }
+    });
+
+    regUsername?.addEventListener('input', (e) => {
+        if (avatarPreviewImg && !regAvatar?.value.trim()) {
+            avatarPreviewImg.src = "https://api.dicebear.com/7.x/bottts/svg?seed=" + (e.target.value || "Papote");
+        }
+    });
+
+    // --- CRÉER UN COMPTE ---
+    document.getElementById('btn-submit-register')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        const username = regUsername?.value.trim();
+        const password = document.getElementById('reg-password')?.value.trim();
+        const avatar = regAvatar?.value.trim() || `https://api.dicebear.com/7.x/bottts/svg?seed=${username}`;
+
+        if (!username || !password) {
+            alert("Veuillez remplir le pseudo ET le mot de passe.");
+            return;
+        }
+
+        let users = getUsers();
+        if (users.some(u => u.username.toLowerCase() === username.toLowerCase())) {
+            alert("Ce pseudo est déjà utilisé. Veuillez en choisir un autre ou vous connecter.");
+            return;
+        }
+
+        const newUser = { id: Date.now(), username: username, password: password, avatar: avatar, createdAt: new Date().toLocaleDateString('fr-FR') };
+        users.push(newUser);
+        saveUsers(users);
+
+        const session = { username: newUser.username, avatar: newUser.avatar, isAdmin: false };
+        localStorage.setItem('user_session', JSON.stringify(session));
+
+        alert("Inscription réussie !");
+        if(regModal) regModal.style.display = 'none';
+        updateAuthUI();
+    });
+
+    // --- SE CONNECTER ---
+    document.getElementById('btn-submit-login')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        const username = document.getElementById('login-username')?.value.trim();
+        const password = document.getElementById('login-password')?.value.trim();
+
+        if (!username || !password) {
+            alert("Veuillez entrer votre pseudo et votre mot de passe.");
+            return;
+        }
+
+        const users = getUsers();
+        const foundUser = users.find(u => u.username.toLowerCase() === username.toLowerCase() && u.password === password);
+
+        if (foundUser) {
+            const session = { username: foundUser.username, avatar: foundUser.avatar, isAdmin: false };
+            localStorage.setItem('user_session', JSON.stringify(session));
+            if(regModal) regModal.style.display = 'none';
+            updateAuthUI();
+        } else {
+            alert("Pseudo ou mot de passe incorrect.");
+        }
+    });
+
+    // --- CONNEXION ADMIN ---
+    document.getElementById('btn-submit-admin')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        const pass = document.getElementById('admin-pass')?.value.trim();
+        const errorMsg = document.getElementById('admin-error-msg');
+
+        if (pass === 'admin123') {
+            const session = { username: "Admin", avatar: "https://api.dicebear.com/7.x/bottts/svg?seed=Admin", isAdmin: true };
+            localStorage.setItem('user_session', JSON.stringify(session));
+            if(adminModal) adminModal.style.display = 'none';
+            updateAuthUI();
+        } else {
+            if (errorMsg) {
+                errorMsg.textContent = "Mot de passe incorrect.";
+                errorMsg.style.display = "block";
+            } else {
+                alert("Mot de passe administrateur incorrect.");
+            }
+        }
+    });
+}
 
 // ==========================================
-// 3. CARROUSEL CORRIGÉ (SÉCURISÉ)
+// 4. CARROUSEL
 // ==========================================
 const slides = [
     { image: "assets/images/slideshow/coraline.jpg", tagLine: "Questionnaire satisfaction <span>en ligne</span>" },
     { image: "assets/images/slideshow/coraline2.jpg", tagLine: "Ateliers et activités <span>toute l'année</span>" }
 ];
 
-const bannerImg = document.getElementById('banner-img');
-const bannerTxt = document.getElementById('banner-txt');
-const dotsContainer = document.getElementById('dots');
 let currentIndex = 0;
 
 function createDots() {
+    const dotsContainer = document.getElementById('dots');
     if (!dotsContainer) return;
     dotsContainer.innerHTML = '';
     slides.forEach((_, index) => {
@@ -155,9 +239,11 @@ function createDots() {
 }
 
 function updateSlide() {
+    const bannerImg = document.getElementById('banner-img');
+    const bannerTxt = document.getElementById('banner-txt');
+
     if (bannerImg && slides[currentIndex]) {
         bannerImg.src = slides[currentIndex].image;
-        // Gestion au cas où l'image 2 n'existe pas encore
         bannerImg.onerror = () => { bannerImg.src = "assets/images/coraline.jpg"; };
     }
     if (bannerTxt && slides[currentIndex]) {
@@ -166,7 +252,6 @@ function updateSlide() {
     createDots();
 }
 
-// Changement automatique toutes les 5 secondes
 setInterval(() => {
     if (slides.length > 1) {
         currentIndex = (currentIndex + 1) % slides.length;
@@ -174,23 +259,22 @@ setInterval(() => {
     }
 }, 5000);
 
-
 // ==========================================
-// 4. CALENDRIER INTERACTIF
+// 5. CALENDRIER INTERACTIF
 // ==========================================
 const monthNames = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
 let currentDate = new Date();
 let selectedDateStr = "";
 
 function renderCalendar() {
+    const daysContainer = document.getElementById('calendar-days');
+    if (!daysContainer) return;
+
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
 
     const monthYearElement = document.getElementById('calendar-month-year');
     if (monthYearElement) monthYearElement.textContent = monthNames[month] + " " + year;
-
-    const daysContainer = document.getElementById('calendar-days');
-    if (!daysContainer) return;
 
     daysContainer.innerHTML = '';
 
@@ -255,240 +339,51 @@ function renderCalendar() {
     }
 }
 
-document.getElementById('prev-month')?.addEventListener('click', () => {
-    currentDate.setMonth(currentDate.getMonth() - 1);
-    renderCalendar();
-});
-
-document.getElementById('next-month')?.addEventListener('click', () => {
-    currentDate.setMonth(currentDate.getMonth() + 1);
-    renderCalendar();
-});
 // ==========================================
-// 1. GESTION DU STOCKAGE LOCAL
-// ==========================================
-function getUsers() {
-    try {
-        return JSON.parse(localStorage.getItem('registered_users')) || [];
-    } catch(e) {
-        return [];
-    }
-}
-
-function saveUsers(users) {
-    localStorage.setItem('registered_users', JSON.stringify(users));
-}
-
-function getSubmissions() {
-    try {
-        return JSON.parse(localStorage.getItem('form_submissions')) || [];
-    } catch(e) {
-        return [];
-    }
-}
-
-function saveSubmissions(submissions) {
-    localStorage.setItem('form_submissions', JSON.stringify(submissions));
-}
-
-// ==========================================
-// 2. SÉCURISATION AUTHENTIFICATION
-// ==========================================
-function setupAuth() {
-    const regModal = document.getElementById('register-modal');
-    const adminModal = document.getElementById('admin-modal');
-
-    // Ouverture des modales
-    document.getElementById('btn-open-register')?.addEventListener('click', () => { 
-        if(regModal) regModal.style.display = 'flex'; 
-    });
-    
-    document.getElementById('btn-open-admin-login')?.addEventListener('click', () => { 
-        if(adminModal) adminModal.style.display = 'flex'; 
-    });
-
-    // Fermeture des modales
-    document.querySelectorAll('.close-modal').forEach(btn => {
-        btn.addEventListener('click', () => {
-            if(regModal) regModal.style.display = 'none';
-            if(adminModal) adminModal.style.display = 'none';
-        });
-    });
-
-    // Gestion des onglets (Connexion vs Inscription)
-    const tabLogin = document.getElementById('tab-login');
-    const tabRegister = document.getElementById('tab-register');
-    const formLogin = document.getElementById('form-login');
-    const formRegister = document.getElementById('form-register');
-
-    if (tabLogin && tabRegister && formLogin && formRegister) {
-        tabLogin.addEventListener('click', () => {
-            tabLogin.style.borderBottom = "3px solid #0284c7";
-            tabRegister.style.borderBottom = "none";
-            formLogin.style.display = 'block';
-            formRegister.style.display = 'none';
-        });
-
-        tabRegister.addEventListener('click', () => {
-            tabRegister.style.borderBottom = "3px solid #16a34a";
-            tabLogin.style.borderBottom = "none";
-            formRegister.style.display = 'block';
-            formLogin.style.display = 'none';
-        });
-    }
-
-    // --- S'INSCRIRE ---
-    document.getElementById('btn-submit-register')?.addEventListener('click', (e) => {
-        e.preventDefault();
-        const username = document.getElementById('reg-username')?.value.trim();
-        const password = document.getElementById('reg-password')?.value.trim();
-        const avatar = document.getElementById('reg-avatar')?.value.trim() || `https://api.dicebear.com/7.x/bottts/svg?seed=${username}`;
-
-        if (!username || !password) {
-            alert("Veuillez remplir le pseudo ET le mot de passe.");
-            return;
-        }
-
-        let users = getUsers();
-        if (users.some(u => u.username.toLowerCase() === username.toLowerCase())) {
-            alert("Ce pseudo est déjà utilisé. Veuillez en choisir un autre ou vous connecter.");
-            return;
-        }
-
-        const newUser = { id: Date.now(), username: username, password: password, avatar: avatar, createdAt: new Date().toLocaleDateString('fr-FR') };
-        users.push(newUser);
-        saveUsers(users);
-
-        // Connecter immédiatement l'utilisateur
-        const session = { username: newUser.username, avatar: newUser.avatar, isAdmin: false };
-        localStorage.setItem('user_session', JSON.stringify(session));
-
-        alert("Inscription réussie !");
-        if(regModal) regModal.style.display = 'none';
-        updateAuthUI();
-    });
-
-    // --- SE CONNECTER ---
-    document.getElementById('btn-submit-login')?.addEventListener('click', (e) => {
-        e.preventDefault();
-        const username = document.getElementById('login-username')?.value.trim();
-        const password = document.getElementById('login-password')?.value.trim();
-
-        if (!username || !password) {
-            alert("Veuillez entrer votre pseudo et votre mot de passe.");
-            return;
-        }
-
-        const users = getUsers();
-        const foundUser = users.find(u => u.username.toLowerCase() === username.toLowerCase() && u.password === password);
-
-        if (foundUser) {
-            const session = { username: foundUser.username, avatar: foundUser.avatar, isAdmin: false };
-            localStorage.setItem('user_session', JSON.stringify(session));
-            if(regModal) regModal.style.display = 'none';
-            updateAuthUI();
-        } else {
-            alert("Pseudo ou mot de passe incorrect.");
-        }
-    });
-
-    // --- CONNEXION ADMIN ---
-    document.getElementById('btn-submit-admin')?.addEventListener('click', (e) => {
-        e.preventDefault();
-        const pass = document.getElementById('admin-pass')?.value.trim();
-        if (pass === 'admin123') {
-            const session = { username: "Admin", avatar: "https://api.dicebear.com/7.x/bottts/svg?seed=Admin", isAdmin: true };
-            localStorage.setItem('user_session', JSON.stringify(session));
-            if(adminModal) adminModal.style.display = 'none';
-            updateAuthUI();
-        } else {
-            alert("Mot de passe administrateur incorrect.");
-        }
-    });
-}
-
-function updateAuthUI() {
-    const user = JSON.parse(localStorage.getItem('user_session'));
-    const authStatus = document.getElementById('auth-status');
-    const authActions = document.getElementById('auth-actions');
-
-    if (user && authStatus && authActions) {
-        authStatus.innerHTML = `
-            <div style="display:flex; align-items:center; gap:10px;">
-                <img src="${user.avatar}" style="width:38px; height:38px; border-radius:50%; object-fit:cover; border:2px solid #0284c7;" onerror="this.src='https://api.dicebear.com/7.x/bottts/svg?seed=User'">
-                <span>Bienvenue, <strong>${user.username}</strong> ${user.isAdmin ? '🛠️' : ''}</span>
-            </div>
-        `;
-
-        let adminBtn = user.isAdmin ? `<a href="admin.html" class="btn-auth" style="background-color:#e11d48; color:white; text-decoration:none; padding:8px 12px; border-radius:5px; font-weight:bold;">Page Admin ➔</a>` : '';
-
-        authActions.innerHTML = `
-            ${adminBtn}
-            <button id="btn-logout" style="background:#64748b; color:white; border:none; padding:8px 12px; border-radius:5px; cursor:pointer;">Déconnexion</button>
-        `;
-
-        document.getElementById('btn-logout')?.addEventListener('click', () => {
-            localStorage.removeItem('user_session');
-            location.reload();
-        });
-
-        const nameInput = document.getElementById('name');
-        if (nameInput && !user.isAdmin) nameInput.value = user.username;
-    }
-}
-
-// ==========================================
-// 3. FORMULAIRE D'INSCRIPTION ATELIER
-// ==========================================
-const workshopForm = document.getElementById('workshop-form');
-const formMessage = document.getElementById('form-message');
-
-if (workshopForm) {
-    workshopForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-
-        const userSession = JSON.parse(localStorage.getItem('user_session'));
-
-        const formData = {
-            id: Date.now(),
-            name: userSession ? userSession.username : (document.getElementById('name')?.value || "Anonyme"),
-            satisfaction: document.getElementById('satisfaction')?.value || "Non spécifié",
-            eventDate: document.getElementById('selected-date')?.value || "Non précisée",
-            submittedAt: new Date().toLocaleString('fr-FR')
-        };
-
-        let submissions = getSubmissions();
-        submissions.push(formData);
-        saveSubmissions(submissions);
-
-        if (formMessage) {
-            formMessage.style.color = '#16a34a';
-            formMessage.textContent = '✅ Réponses et inscription enregistrées !';
-        }
-        
-        workshopForm.reset();
-    });
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-    setupAuth();
-    updateAuthUI();
-});
-
-
-// ==========================================
-// INITIALISATION
+// 6. INITIALISATION UNIQUE (Au chargement de la page)
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
     setupAuth();
     updateAuthUI();
-});
-
-// ==========================================
-// INITIALISATION
-// ==========================================
-document.addEventListener('DOMContentLoaded', () => {
     renderCalendar();
-    updateAuthUI();
     createDots();
+
+    // Boutons navigation calendrier
+    document.getElementById('prev-month')?.addEventListener('click', () => {
+        currentDate.setMonth(currentDate.getMonth() - 1);
+        renderCalendar();
+    });
+
+    document.getElementById('next-month')?.addEventListener('click', () => {
+        currentDate.setMonth(currentDate.getMonth() + 1);
+        renderCalendar();
+    });
+
+    // Formulaire inscription atelier basique
+    const workshopForm = document.getElementById('workshop-form');
+    if (workshopForm) {
+        workshopForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const userSession = JSON.parse(localStorage.getItem('user_session'));
+
+            const formData = {
+                id: Date.now(),
+                name: userSession ? userSession.username : (document.getElementById('name')?.value || "Anonyme"),
+                satisfaction: document.getElementById('satisfaction')?.value || "Non spécifié",
+                eventDate: document.getElementById('selected-date')?.value || "Non précisée",
+                submittedAt: new Date().toLocaleString('fr-FR')
+            };
+
+            let submissions = getSubmissions();
+            submissions.push(formData);
+            saveSubmissions(submissions);
+
+            const formMessage = document.getElementById('form-message');
+            if (formMessage) {
+                formMessage.style.color = '#16a34a';
+                formMessage.textContent = '✅ Réponses enregistrées !';
+            }
+            workshopForm.reset();
+        });
+    }
 });

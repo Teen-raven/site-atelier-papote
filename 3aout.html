@@ -8,7 +8,7 @@
         body { font-family: Arial, sans-serif; background-color: #f8fafc; color: #0f172a; padding: 20px; padding-bottom: 100px; }
         .container { max-width: 900px; margin: 0 auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
         
-        /* BARRE D'AUTHENTIFICATION EN HAUT */
+        /* BARRE D'AUTHENTIFICATION */
         .auth-bar { display: flex; justify-content: space-between; align-items: center; background: #f1f5f9; padding: 10px 15px; border-radius: 8px; margin-bottom: 20px; }
         .btn-auth { background-color: #0284c7; color: white; border: none; padding: 8px 14px; border-radius: 6px; font-weight: bold; cursor: pointer; text-decoration: none; }
 
@@ -28,7 +28,7 @@
         .form-group label { display: block; font-weight: bold; margin-bottom: 5px; }
         .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; }
 
-        /* LECTEUR MUSIQUE RÉDUIT EN BAS DE PAGE */
+        /* LECTEUR MUSIQUE RÉDUISIBLE FLOTTANT */
         .mini-player-container {
             position: fixed;
             bottom: 15px;
@@ -63,13 +63,9 @@
         .btn-toggle-player:hover { background: rgba(255,255,255,0.4); }
         .playlist-iframe { width: 100%; height: 180px; border: none; display: block; }
 
-        /* ÉTAT RÉDUIT DU LECTEUR */
-        .mini-player-container.minimized {
-            width: 220px;
-        }
-        .mini-player-container.minimized .playlist-iframe {
-            display: none;
-        }
+        /* ÉTAT RÉDUIT */
+        .mini-player-container.minimized { width: 220px; }
+        .mini-player-container.minimized .playlist-iframe { display: none; }
     </style>
 </head>
 <body>
@@ -146,7 +142,7 @@
 
     <div id="register-modal" class="modal-overlay">
         <div class="modal-content">
-            <span class="close-modal" id="btn-close-reg">&times;</span>
+            <span class="close-modal">&times;</span>
             
             <div style="display:flex; border-bottom:2px solid #e2e8f0; margin-bottom:15px;">
                 <button id="tab-login" style="flex:1; padding:10px; border:none; background:none; cursor:pointer; font-weight:bold; border-bottom:3px solid #0284c7;">Se connecter</button>
@@ -186,98 +182,86 @@
     <script src="script.js"></script>
 
     <script>
-        // --- 1. GESTION DU LECTEUR MUSICAL FLOTTANT ---
-        const iframe = document.getElementById('coraline-player');
-        const miniPlayer = document.getElementById('mini-player');
-        const btnTogglePlayer = document.getElementById('btn-toggle-player');
-        let musicStarted = false;
+        document.addEventListener('DOMContentLoaded', () => {
+            // 1. GESTION MUSIQUE
+            const iframePlayer = document.getElementById('coraline-player');
+            const playerBox = document.getElementById('mini-player');
+            const btnToggle = document.getElementById('btn-toggle-player');
+            let hasStarted = false;
 
-        document.addEventListener('click', () => {
-            if (!musicStarted && iframe) {
-                // Dé-mute la musique au premier clic sur la page
-                iframe.src = iframe.src.replace("mute=1", "mute=0");
-                musicStarted = true;
+            document.addEventListener('click', () => {
+                if (!hasStarted && iframePlayer) {
+                    iframePlayer.src = iframePlayer.src.replace("mute=1", "mute=0");
+                    hasStarted = true;
+                }
+            });
+
+            if (btnToggle && playerBox) {
+                btnToggle.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    playerBox.classList.toggle('minimized');
+                    btnToggle.textContent = playerBox.classList.contains('minimized') ? "➕ Agrandir" : "➖ Réduire";
+                });
+            }
+
+            // 2. MODAL QUESTIONNAIRE DE SATISFACTION
+            const modalSurvey = document.getElementById('survey-modal');
+            const modalAuth = document.getElementById('register-modal');
+            const btnOpen = document.getElementById('btn-open-survey');
+            const btnClose = document.getElementById('btn-close-survey');
+            const inputName = document.getElementById('survey-name');
+            const formSurvey = document.getElementById('survey-form');
+            const msgSurvey = document.getElementById('survey-message');
+
+            if (btnOpen) {
+                btnOpen.addEventListener('click', () => {
+                    const session = JSON.parse(localStorage.getItem('user_session'));
+                    if (!session) {
+                        alert("⚠️ Vous devez être connecté(e) pour donner votre avis !");
+                        if (modalAuth) modalAuth.style.display = 'flex';
+                        return;
+                    }
+                    if (inputName) inputName.value = session.username;
+                    if (modalSurvey) modalSurvey.style.display = 'flex';
+                });
+            }
+
+            if (btnClose && modalSurvey) {
+                btnClose.addEventListener('click', () => { modalSurvey.style.display = 'none'; });
+            }
+
+            // 3. SOUMISSION DU FORMULAIRE (ENREGISTREMENT ADMIN)
+            if (formSurvey) {
+                formSurvey.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    const session = JSON.parse(localStorage.getItem('user_session'));
+
+                    const newResponse = {
+                        id: Date.now(),
+                        workshopName: "Film, Débat & Just Dance (3 Août)",
+                        name: session ? session.username : (inputName ? inputName.value : "Anonyme"),
+                        satisfaction: document.getElementById('survey-satisfaction')?.value || "Non renseigné",
+                        comment: document.getElementById('survey-comment')?.value || "Aucun commentaire",
+                        submittedAt: new Date().toLocaleString('fr-FR')
+                    };
+
+                    let submissions = JSON.parse(localStorage.getItem('form_submissions')) || [];
+                    submissions.push(newResponse);
+                    localStorage.setItem('form_submissions', JSON.stringify(submissions));
+
+                    if (msgSurvey) {
+                        msgSurvey.style.color = "#16a34a";
+                        msgSurvey.textContent = "✅ Merci ! Votre avis a bien été enregistré.";
+                    }
+
+                    setTimeout(() => {
+                        if (modalSurvey) modalSurvey.style.display = 'none';
+                        formSurvey.reset();
+                        if (msgSurvey) msgSurvey.textContent = "";
+                    }, 1500);
+                });
             }
         });
-
-        if (btnTogglePlayer && miniPlayer) {
-            btnTogglePlayer.addEventListener('click', (e) => {
-                e.stopPropagation();
-                miniPlayer.classList.toggle('minimized');
-                btnTogglePlayer.textContent = miniPlayer.classList.contains('minimized') ? "➕ Agrandir" : "➖ Réduire";
-            });
-        }
-
-        // --- 2. OUVERTURE SÉCURISÉE DU QUESTIONNAIRE ---
-        const surveyModal = document.getElementById('survey-modal');
-        const regModal = document.getElementById('register-modal');
-        const btnOpenSurvey = document.getElementById('btn-open-survey');
-        const btnCloseSurvey = document.getElementById('btn-close-survey');
-        const surveyForm = document.getElementById('survey-form');
-        const nameInput = document.getElementById('survey-name');
-
-        if (btnOpenSurvey) {
-            btnOpenSurvey.addEventListener('click', () => {
-                // Vérifie si connecté depuis script.js global
-                const userSession = JSON.parse(localStorage.getItem('user_session'));
-
-                if (!userSession) {
-                    alert("⚠️ Vous devez être connecté(e) pour donner votre avis sur cet atelier !");
-                    // Ouvre la modale de connexion (si elle existe dans cette page)
-                    if (regModal) regModal.style.display = 'flex';
-                    return;
-                }
-
-                if (nameInput) nameInput.value = userSession.username;
-                if (surveyModal) surveyModal.style.display = 'flex';
-            });
-        }
-
-        if (btnCloseSurvey && surveyModal) {
-            btnCloseSurvey.addEventListener('click', () => { 
-                surveyModal.style.display = 'none'; 
-            });
-        }
-
-        // --- 3. ENREGISTREMENT POUR L'ADMIN (SUBMIT) ---
-        if (surveyForm) {
-            surveyForm.addEventListener('submit', (e) => {
-                e.preventDefault();
-
-                const userSession = JSON.parse(localStorage.getItem('user_session'));
-                const satValue = document.getElementById('survey-satisfaction')?.value;
-                const commentValue = document.getElementById('survey-comment')?.value;
-
-                if (!satValue) { alert("Merci de choisir une note !"); return; }
-
-                const responseData = {
-                    id: Date.now(),
-                    workshopName: "Film, Débat & Just Dance (3 Août)",
-                    name: userSession ? userSession.username : (nameInput?.value || "Anonyme"),
-                    satisfaction: satValue,
-                    comment: commentValue?.trim() || "Aucun commentaire",
-                    submittedAt: new Date().toLocaleString('fr-FR')
-                };
-
-                // Sauvegarde locale
-                let submissions = JSON.parse(localStorage.getItem('form_submissions')) || [];
-                submissions.push(responseData);
-                localStorage.setItem('form_submissions', JSON.stringify(submissions));
-
-                const surveyMsg = document.getElementById('survey-message');
-                if (surveyMsg) {
-                    surveyMsg.style.color = "#16a34a";
-                    surveyMsg.textContent = "✅ Merci ! Votre avis a été enregistré pour l'administrateur.";
-                }
-
-                setTimeout(() => {
-                    if (surveyModal) surveyModal.style.display = 'none';
-                    surveyForm.reset();
-                    if (surveyMsg) surveyMsg.textContent = "";
-                }, 1800);
-            });
-        }
     </script>
 </body>
 </html>
-
