@@ -3,23 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3 Août - Atelier Papote</title>
+    <title>3 Août - Atelier Papote & Coraline</title>
     <style>
-        body { font-family: Arial, sans-serif; background-color: #f8fafc; color: #0f172a; padding: 20px; cursor: url('../assets/images/mon-curseur.png'), auto; }
-        a, button, input, select { cursor: url('../assets/images/mon-curseur-hover.png'), pointer; }
+        body { font-family: Arial, sans-serif; background-color: #f8fafc; color: #0f172a; padding: 20px; }
         .container { max-width: 900px; margin: 0 auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        .music-banner { background-color: #0284c7; color: white; padding: 12px; text-align: center; border-radius: 8px; margin-bottom: 20px; font-weight: bold; }
+        
+        /* BARRE D'AUTHENTIFICATION EN HAUT */
+        .auth-bar { display: flex; justify-content: space-between; align-items: center; background: #f1f5f9; padding: 10px 15px; border-radius: 8px; margin-bottom: 20px; }
+        .btn-auth { background-color: #0284c7; color: white; border: none; padding: 8px 14px; border-radius: 6px; font-weight: bold; cursor: pointer; text-decoration: none; }
+
+        /* BANNIÈRE & LECTEUR MUSIQUE CORALINE */
+        .music-card { background: #0f172a; color: white; padding: 15px; border-radius: 10px; margin-bottom: 20px; text-align: center; }
+        .music-banner { background-color: #0284c7; color: white; padding: 10px; border-radius: 6px; font-weight: bold; margin-bottom: 12px; font-size: 14px; }
+        .playlist-iframe { width: 100%; height: 200px; border: none; border-radius: 8px; margin-top: 10px; }
+
         .btn-action { display: inline-block; background-color: #16a34a; color: white; border: none; padding: 12px 20px; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; text-decoration: none; margin-top: 15px; }
         .btn-back { display: inline-block; margin-bottom: 15px; color: #0284c7; text-decoration: none; font-weight: bold; }
         
-        /* STYLES RECETTES PDF */
+        /* SECTION RECETTES PDF */
         .pdf-section { margin-top: 30px; background-color: #f1f5f9; padding: 20px; border-radius: 10px; border-left: 5px solid #0284c7; }
         .pdf-card { background: white; padding: 15px; border-radius: 8px; margin-top: 15px; }
         .pdf-viewer { width: 100%; height: 350px; border: 1px solid #cbd5e1; border-radius: 6px; margin-top: 10px; }
 
-        /* STYLES MODAL QUESTIONNAIRE */
+        /* MODALES */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 1000; }
-        .modal-content { background: white; padding: 25px; border-radius: 12px; width: 90%; max-width: 450px; position: relative; box-shadow: 0 5px 20px rgba(0,0,0,0.2); }
+        .modal-content { background: white; padding: 25px; border-radius: 12px; width: 90%; max-width: 450px; position: relative; box-shadow: 0 5px 20px rgba(0,0,0,0.2); color: #333; }
         .close-modal { position: absolute; top: 12px; right: 15px; font-size: 24px; cursor: pointer; color: #64748b; }
         .form-group { margin-top: 15px; }
         .form-group label { display: block; font-weight: bold; margin-bottom: 5px; }
@@ -29,18 +37,26 @@
 <body>
 
     <div class="container">
-        <a href="../index.html" class="btn-back">← Retour au calendrier</a>
-
-        <div id="music-banner" class="music-banner">
-            🎵 Cliquez n'importe où sur la page pour lancer l'ambiance musicale !
+        <div class="auth-bar">
+            <div id="auth-status">
+                <span>Non connecté(e)</span>
+            </div>
+            <div id="auth-actions">
+                <button id="btn-open-register" class="btn-auth">Se connecter / S'inscrire</button>
+            </div>
         </div>
 
-        <div style="display: none;">
-            <iframe id="youtube-player" width="1" height="1" src="https://music.youtube.com/watch?v=7YYT17AS8so?enablejsapi=1&autoplay=1&mute=1" allow="autoplay"></iframe>
+        <a href="index.html" class="btn-back">← Retour au calendrier</a>
+
+        <div class="music-card">
+            <div id="music-banner" class="music-banner">
+                🎵 Cliquez n'importe où sur la page pour lancer la bande originale de Coraline !
+            </div>
+            <iframe id="coraline-player" class="playlist-iframe" src="https://www.youtube.com/embed/videoseries?list=PL467E0A124976450A&enablejsapi=1&autoplay=1&mute=1" allow="autoplay; encrypted-media" allowfullscreen></iframe>
         </div>
 
         <h1>🎬 Atelier du 3 Août : Film, Débat, Repas & Just Dance</h1>
-        <img src="../assets/images/coraline.jpg" alt="Affiche 3 Août" style="width: 100%; max-height: 350px; object-fit: cover; border-radius: 8px;" onerror="this.src='https://via.placeholder.com/800x350?text=Atelier+Papote'">
+        <img src="assets/images/coraline.jpg" alt="Affiche Coraline" style="width: 100%; max-height: 350px; object-fit: cover; border-radius: 8px;" onerror="this.src='https://via.placeholder.com/800x350?text=Atelier+Coraline'">
 
         <div style="text-align: center; margin: 20px 0;">
             <button id="btn-open-survey" class="btn-action">⭐ Donner mon avis sur cet atelier</button>
@@ -50,7 +66,7 @@
             <h2>📖 Recettes de l'Atelier (PDF)</h2>
             <div class="pdf-card">
                 <h3>🍽️ Recette du 3 Août</h3>
-                <iframe class="pdf-viewer" src="../assets/pdf/recette-3-aout.pdf"></iframe>
+                <iframe class="pdf-viewer" src="assets/pdf/recette-3-aout.pdf"></iframe>
             </div>
         </section>
     </div>
@@ -64,7 +80,7 @@
             <form id="survey-form">
                 <div class="form-group">
                     <label>Votre Nom / Pseudo :</label>
-                    <input type="text" id="survey-name" required placeholder="Ex: Alex">
+                    <input type="text" id="survey-name" readonly style="background:#f1f5f9;">
                 </div>
 
                 <div class="form-group">
@@ -89,65 +105,112 @@
         </div>
     </div>
 
+    <div id="register-modal" class="modal-overlay">
+        <div class="modal-content">
+            <span class="close-modal" id="btn-close-reg">&times;</span>
+            
+            <div style="display:flex; border-bottom:2px solid #e2e8f0; margin-bottom:15px;">
+                <button id="tab-login" style="flex:1; padding:10px; border:none; background:none; cursor:pointer; font-weight:bold; border-bottom:3px solid #0284c7;">Se connecter</button>
+                <button id="tab-register" style="flex:1; padding:10px; border:none; background:none; cursor:pointer; font-weight:bold;">Créer un compte</button>
+            </div>
+
+            <div id="form-login">
+                <div class="form-group">
+                    <label>Pseudo :</label>
+                    <input type="text" id="login-username" placeholder="Votre pseudo">
+                </div>
+                <div class="form-group">
+                    <label>Mot de passe :</label>
+                    <input type="password" id="login-password" placeholder="Mot de passe">
+                </div>
+                <button id="btn-submit-login" class="btn-auth" style="width:100%; margin-top:15px; padding:10px;">Connexion</button>
+            </div>
+
+            <div id="form-register" style="display:none;">
+                <div class="form-group">
+                    <label>Pseudo :</label>
+                    <input type="text" id="reg-username" placeholder="Ex: Alex">
+                </div>
+                <div class="form-group">
+                    <label>Mot de passe :</label>
+                    <input type="password" id="reg-password" placeholder="Mot de passe">
+                </div>
+                <div class="form-group">
+                    <label>Lien photo / avatar (Optionnel) :</label>
+                    <input type="text" id="reg-avatar" placeholder="https://...">
+                </div>
+                <button id="btn-submit-register" class="btn-action" style="width:100%; margin-top:15px; padding:10px;">S'inscrire</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
     <script>
-        // 1. GESTION DE LA MUSIQUE
+        // 1. GESTION DE LA PLAYLIST CORALINE
         const musicBanner = document.getElementById('music-banner');
-        const iframe = document.getElementById('youtube-player');
+        const iframe = document.getElementById('coraline-player');
         let musicStarted = false;
 
         document.addEventListener('click', () => {
             if (!musicStarted && iframe) {
+                // Activer le son (remplacer mute=1 par mute=0) au premier clic sur la page
                 iframe.src = iframe.src.replace("mute=1", "mute=0");
                 if (musicBanner) {
-                    musicBanner.innerHTML = "🎶 Musique d'ambiance en cours de lecture...";
+                    musicBanner.innerHTML = "🎧 Lecture en cours : Bande originale de Coraline 🎶";
                     musicBanner.style.backgroundColor = "#16a34a";
                 }
                 musicStarted = true;
             }
         });
 
-        // 2. GESTION DU MODAL QUESTIONNAIRE
-        const modal = document.getElementById('survey-modal');
-        const btnOpen = document.getElementById('btn-open-survey');
-        const btnClose = document.getElementById('btn-close-survey');
-        const surveyForm = document.getElementById('survey-form');
+        // 2. OUVERTURE SÉCURISÉE DU QUESTIONNAIRE
+        const surveyModal = document.getElementById('survey-modal');
+        const regModal = document.getElementById('register-modal');
+        const btnOpenSurvey = document.getElementById('btn-open-survey');
+        const btnCloseSurvey = document.getElementById('btn-close-survey');
         const nameInput = document.getElementById('survey-name');
 
-        // Pré-remplir le pseudo si l'utilisateur est connecté
-        btnOpen.addEventListener('click', () => {
+        btnOpenSurvey.addEventListener('click', () => {
             const userSession = JSON.parse(localStorage.getItem('user_session'));
-            if (userSession && userSession.username) {
-                nameInput.value = userSession.username;
+
+            // VÉRIFICATION CONNEXION : Si non connecté -> ouvre la modal de connexion
+            if (!userSession) {
+                alert("⚠️ Vous devez vous connecter pour donner votre avis !");
+                if (regModal) regModal.style.display = 'flex';
+                return;
             }
-            modal.style.display = 'flex';
+
+            // Si connecté -> pré-remplit le pseudo et ouvre le questionnaire
+            nameInput.value = userSession.username;
+            surveyModal.style.display = 'flex';
         });
 
-        btnClose.addEventListener('click', () => { modal.style.display = 'none'; });
+        btnCloseSurvey.addEventListener('click', () => { surveyModal.style.display = 'none'; });
 
         // 3. ENREGISTREMENT DE LA RÉPONSE POUR L'ADMIN
-        surveyForm.addEventListener('submit', (e) => {
+        document.getElementById('survey-form').addEventListener('submit', (e) => {
             e.preventDefault();
+            const userSession = JSON.parse(localStorage.getItem('user_session'));
 
             const responseData = {
                 id: Date.now(),
                 workshopName: "Film, Débat & Just Dance (3 Août)",
-                name: nameInput.value || "Anonyme",
+                name: userSession ? userSession.username : nameInput.value,
                 satisfaction: document.getElementById('survey-satisfaction').value,
                 comment: document.getElementById('survey-comment').value || "Aucun commentaire",
                 submittedAt: new Date().toLocaleString('fr-FR')
             };
 
-            // Sauvegarde dans le LocalStorage
             let submissions = JSON.parse(localStorage.getItem('form_submissions')) || [];
             submissions.push(responseData);
             localStorage.setItem('form_submissions', JSON.stringify(submissions));
 
             document.getElementById('survey-message').style.color = "#16a34a";
-            document.getElementById('survey-message').textContent = "✅ Merci ! Votre avis a été transmis à l'administrateur.";
+            document.getElementById('survey-message').textContent = "✅ Merci ! Votre avis a été enregistré pour l'administrateur.";
 
             setTimeout(() => {
-                modal.style.display = 'none';
-                surveyForm.reset();
+                surveyModal.style.display = 'none';
+                document.getElementById('survey-form').reset();
                 document.getElementById('survey-message').textContent = "";
             }, 1800);
         });
