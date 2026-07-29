@@ -9,6 +9,14 @@ const eventsData = {
         description: "Matin : Projection du film & débat. Midi : Repas partagé. Après-midi : Session Just Dance !",
         link: "./3aout.html"
     }
+	const eventsData = {
+    "2026-08-10": {
+        icon: "🎬",
+        title: "03 Août - Film, Débat, Repas & Just Dance",
+        image: "assets/images/coraline.jpg",
+        description: "Matin : Projection du film & débat. Midi : Repas partagé. Après-midi : Session Just Dance !",
+        link: "./10aout.html"
+    }
 };
 
 // ==========================================
