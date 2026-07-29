@@ -386,4 +386,34 @@ document.addEventListener('DOMContentLoaded', () => {
             workshopForm.reset();
         });
     }
-});
+});function updateAuthUI() {
+    const user = JSON.parse(localStorage.getItem('user_session'));
+    const authStatus = document.getElementById('auth-status');
+    const authActions = document.getElementById('auth-actions');
+
+    if (user && authStatus && authActions) {
+        authStatus.innerHTML = `
+            <div style="display:flex; align-items:center; gap:10px;">
+                <img src="${user.avatar}" style="width:38px; height:38px; border-radius:50%; object-fit:cover; border:2px solid #0284c7;" onerror="this.src='https://api.dicebear.com/7.x/bottts/svg?seed=User'">
+                <span>Bienvenue, <strong>${user.username}</strong> ${user.isAdmin ? '(Admin 🛠️)' : ''}</span>
+            </div>
+        `;
+
+        let adminBtn = user.isAdmin ? `<a href="admin.html" class="btn-auth" style="background-color:#e11d48; color:white; text-decoration:none; padding:8px 12px; border-radius:5px; font-weight:bold; margin-right:5px;">Page Admin ➔</a>` : '';
+        
+        // Bouton vers la nouvelle page de propositions pour tous les membres
+        let proposalBtn = `<a href="suggestions.html" class="btn-auth" style="background-color:#16a34a; color:white; text-decoration:none; padding:8px 12px; border-radius:5px; font-weight:bold; margin-right:5px;">💡 Mon Profil / Suggestions</a>`;
+
+        authActions.innerHTML = `
+            ${adminBtn}
+            ${proposalBtn}
+            <button id="btn-logout" class="btn-auth" style="background:#64748b; color:white; border:none; padding:8px 12px; border-radius:5px; cursor:pointer;">Déconnexion</button>
+        `;
+
+        document.getElementById('btn-logout')?.addEventListener('click', () => {
+            localStorage.removeItem('user_session');
+            location.reload();
+        });
+    }
+}
+
