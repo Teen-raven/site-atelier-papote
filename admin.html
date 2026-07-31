@@ -3,194 +3,128 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Administration - Atelier Papote</title>
+    <title>Espace Administration</title>
     <style>
-        * { box-sizing: border-box; font-family: Arial, sans-serif; }
-        body { background-color: #0f172a; color: #f8fafc; margin: 0; padding: 20px; }
-        .container { max-width: 1000px; margin: 0 auto; }
-        
-        .admin-header { display: flex; justify-content: space-between; align-items: center; background: #1e293b; padding: 15px 20px; border-radius: 10px; border: 1px solid #334155; margin-bottom: 25px; }
-        .btn-back { background: #0284c7; color: white; text-decoration: none; padding: 8px 15px; border-radius: 6px; font-weight: bold; }
-        .btn-logout { background: #e11d48; color: white; border: none; padding: 8px 15px; border-radius: 6px; font-weight: bold; cursor: pointer; }
-
-        .card { background: #1e293b; padding: 20px; border-radius: 10px; margin-bottom: 25px; border: 1px solid #334155; }
-        h2 { color: #38bdf8; margin-top: 0; border-bottom: 2px solid #334155; padding-bottom: 10px; font-size: 20px; }
-
-        /* LISTE ET TCHAT ADMIN */
-        .user-card { background: #0f172a; padding: 15px; border-radius: 8px; border: 1px solid #334155; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
-        .btn-delete { background: #e11d48; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
-        .pass-tag { background: #334155; color: #facc15; padding: 3px 8px; border-radius: 4px; font-family: monospace; font-size: 14px; }
-
-        .chat-admin-box { background: #0f172a; border: 1px solid #334155; padding: 12px; border-radius: 8px; margin-bottom: 12px; }
-        .reply-field { width: 70%; padding: 8px; border-radius: 4px; border: 1px solid #475569; background: #1e293b; color: white; }
-        .btn-send { background: #16a34a; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
-
-        #access-denied { text-align: center; padding: 50px 20px; background: #1e293b; border-radius: 12px; border: 1px solid #e11d48; margin-top: 40px; }
+        body { font-family: system-ui, sans-serif; background-color: #0f172a; color: #f8fafc; padding: 20px; }
+        .container { max-width: 1000px; margin: 0 auto; background: #1e293b; padding: 25px; border-radius: 12px; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; border-bottom: 1px solid #334155; padding-bottom: 15px; }
+        .btn { background: #0284c7; color: white; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-weight: bold; border: none; cursor: pointer; }
+        .btn-danger { background: #ef4444; }
+        .btn-sm { padding: 4px 8px; font-size: 12px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; margin-bottom: 30px; }
+        th, td { border: 1px solid #334155; padding: 12px; text-align: left; }
+        th { background: #0f172a; color: #38bdf8; }
+        .avatar-img { width: 35px; height: 35px; border-radius: 50%; object-fit: cover; vertical-align: middle; margin-right: 8px; }
+        .badge { background: #0284c7; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 12px; }
+        .password-tag { background: #334155; color: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-family: monospace; }
     </style>
 </head>
 <body>
 
     <div class="container">
-        
-        <div id="access-denied" style="display: none;">
-            <h1 style="color: #f43f5e;">🚫 Accès Refusé</h1>
-            <p>Seul l'administrateur a accès à cette page.</p>
-            <a href="index.html" class="btn-back">➔ Retour à l'accueil</a>
+        <div class="header">
+            <h2>🛠️ Tableau de bord Administrateur</h2>
+            <a href="index.html" class="btn">← Retour au site</a>
         </div>
 
-        <div id="admin-content" style="display: none;">
-            
-            <div class="admin-header">
-                <div>
-                    <h1 style="margin: 0; font-size: 22px;">🛠️ Espace Administrateur</h1>
-                    <small style="color: #94a3b8;">Gestion complète des profils et conversations</small>
-                </div>
-                <div>
-                    <a href="index.html" class="btn-back">← Retour au site</a>
-                    <button id="btn-admin-logout" class="btn-logout">Déconnexion</button>
-                </div>
-            </div>
+        <h3>👥 Utilisateurs inscrits</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Avatar</th>
+                    <th>Pseudo</th>
+                    <th>Mot de passe 🔑</th>
+                    <th>Inscription</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="users-table-body"></tbody>
+        </table>
 
-            <div class="card">
-                <h2>👥 Membres Inscrits & Mots de Passe</h2>
-                <div id="users-admin-list"></div>
-            </div>
-
-            <div class="card">
-                <h2>💬 Tchat en Direct avec les Membres</h2>
-                <div id="admin-chat-list"></div>
-            </div>
-
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h3>📋 Questionnaires de satisfaction reçus</h3>
+            <button id="btn-clear-submissions" class="btn btn-danger btn-sm">Effacer les réponses</button>
         </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Date d'envoi</th>
+                    <th>Atelier</th>
+                    <th>Utilisateur</th>
+                    <th>Avis / Satisfaction</th>
+                    <th>Commentaire</th>
+                </tr>
+            </thead>
+            <tbody id="submissions-table-body"></tbody>
+        </table>
     </div>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
     <script>
-	// Activer le statut "Admin en ligne"
-localStorage.setItem('admin_online', 'true');
+        const session = JSON.parse(localStorage.getItem('user_session'));
+        if (!session || !session.isAdmin) {
+            alert("Accès réservé à l'administrateur !");
+            window.location.href = "index.html";
+        }
 
-// Désactiver le statut si l'admin quitte la page ou se déconnecte
-window.addEventListener('beforeunload', () => {
-    localStorage.setItem('admin_online', 'false');
-});
+        function loadUsers() {
+            const tbody = document.getElementById('users-table-body');
+            const users = JSON.parse(localStorage.getItem('registered_users')) || [];
 
-document.getElementById('btn-admin-logout')?.addEventListener('click', () => {
-    localStorage.setItem('admin_online', 'false');
-    localStorage.removeItem('user_session');
-    window.location.href = 'index.html';
-});
-
-        document.addEventListener('DOMContentLoaded', () => {
-            const session = JSON.parse(localStorage.getItem('user_session'));
-
-            if (!session || !session.isAdmin) {
-                document.getElementById('access-denied').style.display = 'block';
+            if (users.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#94a3b8;">Aucun utilisateur inscrit.</td></tr>`;
                 return;
             }
 
-            document.getElementById('admin-content').style.display = 'block';
+            tbody.innerHTML = users.map(user => `
+                <tr>
+                    <td><img src="${user.avatar}" class="avatar-img" onerror="this.src='https://api.dicebear.com/7.x/bottts/svg?seed=User'"></td>
+                    <td><strong>${user.username}</strong></td>
+                    <td><span class="password-tag">${user.password}</span></td>
+                    <td><small>${user.createdAt || 'N/A'}</small></td>
+                    <td><button class="btn btn-danger btn-sm" onclick="deleteUser(${user.id})">❌ Supprimer</button></td>
+                </tr>
+            `).join('');
+        }
 
-            document.getElementById('btn-admin-logout').addEventListener('click', () => {
-                localStorage.removeItem('user_session');
-                window.location.href = 'index.html';
-            });
+        function deleteUser(userId) {
+            if (confirm("Supprimer cet utilisateur ?")) {
+                let users = JSON.parse(localStorage.getItem('registered_users')) || [];
+                users = users.filter(u => u.id !== userId);
+                localStorage.setItem('registered_users', JSON.stringify(users));
+                loadUsers();
+            }
+        }
 
-            // --- 1. AFFICHER ET SUPPRIMER LES PROFILS (AVEC MDP) ---
-            function renderUsersAdmin() {
-                const container = document.getElementById('users-admin-list');
-                const users = JSON.parse(localStorage.getItem('registered_users')) || [];
+        function loadSubmissions() {
+            const tbody = document.getElementById('submissions-table-body');
+            const submissions = JSON.parse(localStorage.getItem('form_submissions')) || [];
 
-                if (users.length === 0) {
-                    container.innerHTML = "<p style='color:#94a3b8;'>Aucun membre inscrit.</p>";
-                    return;
-                }
-
-                container.innerHTML = users.map(u => `
-                    <div class="user-card">
-                        <div style="display:flex; align-items:center; gap:12px;">
-                            <img src="${u.avatar}" style="width:40px; height:40px; border-radius:50%; object-fit:cover; border:2px solid #0284c7;" onerror="this.src='https://api.dicebear.com/7.x/bottts/svg?seed=User'">
-                            <div>
-                                <strong style="color:white;">${u.username}</strong>
-                                <small style="display:block; color:#64748b;">Créé le : ${u.createdAt || 'Inconnu'}</small>
-                            </div>
-                        </div>
-                        <div>
-                            <span>🔑 Mot de passe : <strong class="pass-tag">${u.password}</strong></span>
-                            <button onclick="deleteUser(${u.id})" class="btn-delete" style="margin-left:15px;">🗑️ Supprimer</button>
-                        </div>
-                    </div>
-                `).join('');
+            if (submissions.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#94a3b8;">Aucune réponse reçue pour le moment.</td></tr>`;
+                return;
             }
 
-            // Supprimer un profil
-            window.deleteUser = function(id) {
-                if (confirm("⚠️ Voulez-vous vraiment supprimer ce membre définitivement ?")) {
-                    let users = JSON.parse(localStorage.getItem('registered_users')) || [];
-                    users = users.filter(u => u.id !== id);
-                    localStorage.setItem('registered_users', JSON.stringify(users));
-                    renderUsersAdmin();
-                }
-            };
+            tbody.innerHTML = submissions.map(sub => `
+                <tr>
+                    <td><small>${sub.submittedAt}</small></td>
+                    <td><strong style="color:#38bdf8;">${sub.workshopName || 'Atelier Général'}</strong></td>
+                    <td><strong>${sub.name}</strong></td>
+                    <td><span class="badge">${sub.satisfaction}</span></td>
+                    <td><small>${sub.comment || '-'}</small></td>
+                </tr>
+            `).join('');
+        }
 
-            // --- 2. RÉPONDRE AUX TCHATS DIRECTS ---
-            function renderAdminChat() {
-                const container = document.getElementById('admin-chat-list');
-                const messages = JSON.parse(localStorage.getItem('chat_messages')) || [];
-
-                if (messages.length === 0) {
-                    container.innerHTML = "<p style='color:#94a3b8;'>Aucun message reçu dans le tchat.</p>";
-                    return;
-                }
-
-                // Regrouper par utilisateur
-                const usersWithMsgs = [...new Set(messages.map(m => m.username))];
-
-                container.innerHTML = usersWithMsgs.map(uname => {
-                    const userMsgs = messages.filter(m => m.username === uname);
-                    return `
-                        <div class="chat-admin-box">
-                            <h3 style="margin:0 0 10px 0; color:#38bdf8;">👤 Conversation avec : ${uname}</h3>
-                            <div style="max-height:150px; overflow-y:auto; background:#1e293b; padding:10px; border-radius:6px; margin-bottom:10px;">
-                                ${userMsgs.map(m => `
-                                    <div style="margin-bottom:5px; color:${m.fromAdmin ? '#4ade80' : '#f8fafc'};">
-                                        <strong>${m.senderName} :</strong> ${m.text} <small style="color:#64748b;">(${m.timestamp || ''})</small>
-                                    </div>
-                                `).join('')}
-                            </div>
-                            <div style="display:flex; gap:10px;">
-                                <input type="text" id="admin-reply-${uname}" class="reply-field" placeholder="Répondre à ${uname}...">
-                                <button onclick="replyToChat('${uname}')" class="btn-send">Envoyer la réponse</button>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
+        document.getElementById('btn-clear-submissions')?.addEventListener('click', () => {
+            if (confirm("Effacer tous les avis ?")) {
+                localStorage.removeItem('form_submissions');
+                loadSubmissions();
             }
-
-            window.replyToChat = function(targetUser) {
-                const input = document.getElementById(`admin-reply-${targetUser}`);
-                const text = input ? input.value.trim() : "";
-
-                if (!text) return;
-
-                let messages = JSON.parse(localStorage.getItem('chat_messages')) || [];
-                messages.push({
-                    id: Date.now(),
-                    username: targetUser,
-                    senderName: "Admin 🛠️",
-                    text: text,
-                    fromAdmin: true,
-                    timestamp: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
-                });
-
-                localStorage.setItem('chat_messages', JSON.stringify(messages));
-                input.value = "";
-                renderAdminChat();
-            };
-
-            renderUsersAdmin();
-            renderAdminChat();
         });
+
+        loadUsers();
+        loadSubmissions();
     </script>
 </body>
 </html>
