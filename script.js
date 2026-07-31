@@ -1,15 +1,6 @@
 // ==========================================
 // 0. CONFIGURATION FIREBASE (Base de données en ligne)
 // ==========================================
-// ⚠️ REMPLACE CES INFORMATIONS PAR CELLES DE TA CONSOLE FIREBASE ⚠️
-// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
-
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
   apiKey: "AIzaSyDt0pDcCjKaRueh4O7gS9G6gzsKKyUdLnE",
   authDomain: "atelier-papote.firebaseapp.com",
@@ -21,9 +12,11 @@ const firebaseConfig = {
   measurementId: "G-PL3ZE3X8TJ"
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
+// Initialisation de Firebase
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+}
+const db = firebase.database();
 
 // ==========================================
 // 1. BASE DE DONNÉES ÉVÉNEMENTS
@@ -82,14 +75,14 @@ function renderCalendar() {
 
         if (hasEvent) {
             html += `
-                <div class="calendar-day event-day" onclick="window.location.href='${hasEvent.link}'">
-                    <span class="day-number">${day}</span>
-                    <span class="event-icon">${hasEvent.icon}</span>
+                <div class="calendar-day event-day" style="cursor:pointer; background:#e0f2fe; border:2px solid #0284c7; border-radius:8px; padding:5px; text-align:center;" onclick="window.location.href='${hasEvent.link}'">
+                    <span class="day-number" style="font-weight:bold;">${day}</span>
+                    <div class="event-icon" style="font-size:18px; margin-top:2px;">${hasEvent.icon}</div>
                 </div>
             `;
         } else {
             html += `
-                <div class="calendar-day">
+                <div class="calendar-day" style="padding:5px; text-align:center;">
                     <span class="day-number">${day}</span>
                 </div>
             `;
@@ -179,7 +172,7 @@ function setupAuth() {
         });
     });
 
-    // Connexion Membre
+    // Connexion Membre (Firebase)
     document.getElementById('btn-submit-login')?.addEventListener('click', (e) => {
         e.preventDefault();
         const username = document.getElementById('login-username')?.value.trim();
@@ -393,10 +386,9 @@ function initFloatingChat() {
 }
 
 // ==========================================
-// 5. GESTION DES PROPOSITIONS & REPAS (Firebase)
+// 5. GESTION DES PROPOSITIONS & REPAS
 // ==========================================
 function initSuggestionsAndMeals() {
-    // Formulaire de suggestion de repas / activités
     const formMeal = document.getElementById('form-add-meal');
     if (formMeal) {
         formMeal.addEventListener('submit', (e) => {
@@ -433,5 +425,4 @@ document.addEventListener('DOMContentLoaded', () => {
     initFloatingChat();
     initSuggestionsAndMeals();
 });
-
 
