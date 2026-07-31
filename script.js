@@ -1,5 +1,5 @@
 // ==========================================
-// 0. INITIALISATION FIREBASE & SECOURISÉE
+// 0. CONFIGURATION & FIREBASE
 // ==========================================
 const firebaseConfig = {
   apiKey: "AIzaSyDt0pDcCjKaRueh4O7gS9G6gzsKKyUdLnE",
@@ -19,11 +19,53 @@ try {
         db = firebase.database();
     }
 } catch(e) {
-    console.error("Firebase indisponible:", e);
+    console.error("Erreur Firebase:", e);
 }
 
 // ==========================================
-// 1. DONNÉES ÉVÉNEMENTS
+// 1. CARROUSEL / BANNIÈRE ET DOTS
+// ==========================================
+const bannerData = [
+    {
+        image: "assets/images/coraline.jpg",
+        text: "🎬 03 Août : Film Coraline, Débat, Repas & Just Dance !"
+    }
+];
+
+let currentSlide = 0;
+
+function initBanner() {
+    const bannerImg = document.getElementById('banner-img');
+    const bannerTxt = document.getElementById('banner-txt');
+    const dotsContainer = document.getElementById('dots');
+
+    if (!dotsContainer || bannerData.length === 0) return;
+
+    // Génération des dots
+    dotsContainer.innerHTML = '';
+    bannerData.forEach((_, index) => {
+        const dot = document.createElement('span');
+        dot.className = `dot ${index === 0 ? 'active' : ''}`;
+        dot.addEventListener('click', () => showSlide(index));
+        dotsContainer.appendChild(dot);
+    });
+
+    function showSlide(index) {
+        currentSlide = index;
+        if (bannerImg) bannerImg.src = bannerData[index].image;
+        if (bannerTxt) bannerTxt.textContent = bannerData[index].text;
+
+        const allDots = dotsContainer.querySelectorAll('.dot');
+        allDots.forEach((d, i) => {
+            d.className = `dot ${i === index ? 'active' : ''}`;
+        });
+    }
+
+    showSlide(0);
+}
+
+// ==========================================
+// 2. ÉVÉNEMENTS & CALENDRIER
 // ==========================================
 window.eventsData = window.eventsData || {
     "2026-08-03": {
@@ -35,9 +77,6 @@ window.eventsData = window.eventsData || {
     }
 };
 
-// ==========================================
-// 2. GENERATION DU CALENDRIER
-// ==========================================
 function renderCalendar() {
     const calendarGrid = document.getElementById('calendar-grid');
     if (!calendarGrid) return;
@@ -47,7 +86,7 @@ function renderCalendar() {
     
     let html = '';
     for (let i = 0; i < startDayOffset; i++) {
-        html += `<div class="calendar-day empty" style="min-height:40px;"></div>`;
+        html += `<div class="calendar-day empty"></div>`;
     }
 
     for (let day = 1; day <= daysInMonth; day++) {
@@ -56,14 +95,14 @@ function renderCalendar() {
 
         if (hasEvent) {
             html += `
-                <div class="calendar-day event-day" style="cursor:pointer; background:#e0f2fe; border:2px solid #0284c7; border-radius:8px; padding:6px; text-align:center; min-height:40px;" onclick="window.location.href='${hasEvent.link}'">
-                    <span class="day-number" style="font-weight:bold; color:#0369a1;">${day}</span>
-                    <div class="event-icon" style="font-size:16px;">${hasEvent.icon}</div>
+                <div class="calendar-day event-day" onclick="window.location.href='${hasEvent.link}'" title="${hasEvent.title}">
+                    <span class="day-number">${day}</span>
+                    <div class="event-icon" style="font-size:16px; margin-top:2px;">${hasEvent.icon}</div>
                 </div>
             `;
         } else {
             html += `
-                <div class="calendar-day" style="padding:6px; text-align:center; border:1px solid #e2e8f0; border-radius:6px; min-height:40px;">
+                <div class="calendar-day">
                     <span class="day-number">${day}</span>
                 </div>
             `;
@@ -73,112 +112,137 @@ function renderCalendar() {
 }
 
 // ==========================================
-// 3. GESTION POP-UP ET ONGLETS (Connexion/Inscription)
+// 3. GESTION DES MODALES ET INSCRIPTION
 // ==========================================
 function setupAuth() {
     const regModal = document.getElementById('register-modal');
     const adminModal = document.getElementById('admin-modal');
+
+    const btnOpenReg = document.getElementById('btn-open-register');
+    const btnOpenAdmin = document.getElementById('btn-open-admin-login');
 
     const tabLogin = document.getElementById('tab-login');
     const tabRegister = document.getElementById('tab-register');
     const formLogin = document.getElementById('form-login');
     const formRegister = document.getElementById('form-register');
 
+    // Ouverture
+    if (btnOpenReg) {
+        btnOpenReg.onclick = () => {
+            if (regModal) regModal.style.display = 'flex';
+        };
+    }
+
+    if (btnOpenAdmin) {
+        btnOpenAdmin.onclick = () => {
+            if (adminModal) adminModal.style.display = 'flex';
+        };
+    }
+
+    // Fermeture
+    document.querySelectorAll('.close-modal').forEach(btn => {
+        btn.onclick = () => {
+            if (regModal) regModal.style.display = 'none';
+            if (adminModal) adminModal.style.display = 'none';
+        };
+    });
+
     // Bascule Onglets
     if (tabLogin && tabRegister) {
-        tabLogin.addEventListener('click', () => {
+        tabLogin.onclick = () => {
             tabLogin.classList.add('active');
             tabRegister.classList.remove('active');
             formLogin.style.display = 'block';
             formRegister.style.display = 'none';
-        });
+        };
 
-        tabRegister.addEventListener('click', () => {
+        tabRegister.onclick = () => {
             tabRegister.classList.add('active');
             tabLogin.classList.remove('active');
             formRegister.style.display = 'block';
             formLogin.style.display = 'none';
-        });
+        };
     }
 
-    // Ouverture des modales
-    document.getElementById('btn-open-register')?.addEventListener('click', () => { if(regModal) regModal.style.display = 'flex'; });
-    document.getElementById('btn-open-admin-login')?.addEventListener('click', () => { if(adminModal) adminModal.style.display = 'flex'; });
+    // Inscription (Bouton "Créer un compte")
+    const btnSubmitRegister = document.getElementById('btn-submit-register');
+    if (btnSubmitRegister) {
+        btnSubmitRegister.onclick = (e) => {
+            e.preventDefault();
+            const username = document.getElementById('reg-username')?.value.trim();
+            const password = document.getElementById('reg-password')?.value.trim();
+            const avatar = document.getElementById('reg-avatar')?.value.trim() || `https://api.dicebear.com/7.x/bottts/svg?seed=${username}`;
 
-    // Fermeture des modales
-    document.querySelectorAll('.close-modal').forEach(btn => {
-        btn.addEventListener('click', () => {
-            if(regModal) regModal.style.display = 'none';
-            if(adminModal) adminModal.style.display = 'none';
-        });
-    });
+            if (!username || !password) {
+                alert("Veuillez remplir le pseudo et le mot de passe.");
+                return;
+            }
 
-    // Inscription
-    document.getElementById('btn-submit-register')?.addEventListener('click', (e) => {
-        e.preventDefault();
-        const username = document.getElementById('reg-username')?.value.trim();
-        const password = document.getElementById('reg-password')?.value.trim();
-        const avatar = document.getElementById('reg-avatar')?.value.trim() || `https://api.dicebear.com/7.x/bottts/svg?seed=${username}`;
-
-        if (!username || !password) {
-            alert("Veuillez remplir le pseudo et le mot de passe.");
-            return;
-        }
-
-        const userData = { username, password, avatar };
-        const userKey = username.toLowerCase().replace(/\./g, '_');
-
-        if (db) {
-            db.ref('users/' + userKey).once('value', snapshot => {
-                if (snapshot.exists()) {
-                    alert("Ce pseudo existe déjà !");
-                } else {
-                    db.ref('users/' + userKey).set(userData).then(() => {
-                        localStorage.setItem('user_session', JSON.stringify({ username, avatar, isAdmin: false }));
-                        alert("Compte créé avec succès !");
-                        location.reload();
-                    });
-                }
-            });
-        }
-    });
-
-    // Connexion Membre
-    document.getElementById('btn-submit-login')?.addEventListener('click', (e) => {
-        e.preventDefault();
-        const username = document.getElementById('login-username')?.value.trim();
-        const password = document.getElementById('login-password')?.value.trim();
-
-        if (!username || !password) {
-            alert("Veuillez remplir tous les champs.");
-            return;
-        }
-
-        if (db) {
+            const userData = { username, password, avatar };
             const userKey = username.toLowerCase().replace(/\./g, '_');
-            db.ref('users/' + userKey).once('value', snapshot => {
-                const userData = snapshot.val();
-                if (userData && userData.password === password) {
-                    localStorage.setItem('user_session', JSON.stringify({ username: userData.username, avatar: userData.avatar, isAdmin: false }));
-                    location.reload();
-                } else {
-                    alert("Pseudo ou mot de passe incorrect.");
-                }
-            });
-        }
-    });
 
-    // Connexion Admin
-    document.getElementById('btn-submit-admin')?.addEventListener('click', (e) => {
-        e.preventDefault();
-        const pass = document.getElementById('admin-pass')?.value.trim();
-        if (pass === 'admin123') {
-            localStorage.setItem('user_session', JSON.stringify({ username: "Admin", avatar: "https://api.dicebear.com/7.x/bottts/svg?seed=Admin", isAdmin: true }));
-            location.reload();
-        } else {
-            alert("Mot de passe admin incorrect.");
-        }
-    });
+            if (db) {
+                db.ref('users/' + userKey).once('value', snapshot => {
+                    if (snapshot.exists()) {
+                        alert("Ce pseudo est déjà pris !");
+                    } else {
+                        db.ref('users/' + userKey).set(userData).then(() => {
+                            localStorage.setItem('user_session', JSON.stringify({ username, avatar, isAdmin: false }));
+                            alert("Compte créé avec succès !");
+                            location.reload();
+                        });
+                    }
+                });
+            } else {
+                localStorage.setItem('user_session', JSON.stringify({ username, avatar, isAdmin: false }));
+                alert("Compte créé avec succès !");
+                location.reload();
+            }
+        };
+    }
+
+    // Connexion
+    const btnSubmitLogin = document.getElementById('btn-submit-login');
+    if (btnSubmitLogin) {
+        btnSubmitLogin.onclick = (e) => {
+            e.preventDefault();
+            const username = document.getElementById('login-username')?.value.trim();
+            const password = document.getElementById('login-password')?.value.trim();
+
+            if (!username || !password) {
+                alert("Veuillez remplir votre pseudo et mot de passe.");
+                return;
+            }
+
+            if (db) {
+                const userKey = username.toLowerCase().replace(/\./g, '_');
+                db.ref('users/' + userKey).once('value', snapshot => {
+                    const userData = snapshot.val();
+                    if (userData && userData.password === password) {
+                        localStorage.setItem('user_session', JSON.stringify({ username: userData.username, avatar: userData.avatar, isAdmin: false }));
+                        location.reload();
+                    } else {
+                        alert("Pseudo ou mot de passe incorrect.");
+                    }
+                });
+            }
+        };
+    }
+
+    // Admin
+    const btnSubmitAdmin = document.getElementById('btn-submit-admin');
+    if (btnSubmitAdmin) {
+        btnSubmitAdmin.onclick = (e) => {
+            e.preventDefault();
+            const pass = document.getElementById('admin-pass')?.value.trim();
+            if (pass === 'admin123') {
+                localStorage.setItem('user_session', JSON.stringify({ username: "Admin", avatar: "https://api.dicebear.com/7.x/bottts/svg?seed=Admin", isAdmin: true }));
+                location.reload();
+            } else {
+                alert("Mot de passe incorrect.");
+            }
+        };
+    }
 }
 
 function updateAuthUI() {
@@ -189,22 +253,23 @@ function updateAuthUI() {
     if (user && authStatus && authActions) {
         authStatus.innerHTML = `
             <div style="display:flex; align-items:center; gap:10px;">
-                <img src="${user.avatar}" style="width:36px; height:36px; border-radius:50%; border:2px solid #38bdf8;">
+                <img src="${user.avatar}" style="width:36px; height:36px; border-radius:50%; border:2px solid #38bdf8; object-fit:cover;">
                 <span>Bienvenue, <strong>${user.username}</strong> ${user.isAdmin ? '(Admin 🛠️)' : ''}</span>
             </div>
         `;
         authActions.innerHTML = `<button id="btn-logout" class="btn-auth" style="background:#64748b;">Déconnexion</button>`;
-        document.getElementById('btn-logout')?.addEventListener('click', () => {
+        document.getElementById('btn-logout').onclick = () => {
             localStorage.removeItem('user_session');
             location.reload();
-        });
+        };
     }
 }
 
 // ==========================================
-// INITIALISATION AU CHARGEMENT
+// LANCEMENT
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
+    initBanner();
     renderCalendar();
     setupAuth();
     updateAuthUI();
