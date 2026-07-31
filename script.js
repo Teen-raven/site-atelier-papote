@@ -1,5 +1,25 @@
-// ==========================================// ==========================================
-// 1. BASE DE DONNÉES ÉVÉNEMENTS
+// ==========================================
+// 0. CONFIGURATION FIREBASE (Base de données en ligne)
+// ==========================================
+// ⚠️ REMPLACE CES INFORMATIONS PAR CELLES DE TA CONSOLE FIREBASE ⚠️
+const firebaseConfig = {
+    apiKey: "VOTRE_API_KEY",
+    authDomain: "votre-projet.firebaseapp.com",
+    databaseURL: "https://votre-projet-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "votre-projet",
+    storageBucket: "votre-projet.appspot.com",
+    messagingSenderId: "123456789",
+    appId: "1:123456789:web:abcdef"
+};
+
+// Initialisation de Firebase
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+}
+const db = firebase.database();
+
+// ==========================================
+// 1. BASE DE DONNÉES ÉVÉNEMENTS & CARROUSEL
 // ==========================================
 window.eventsData = window.eventsData || {
     "2026-08-03": {
@@ -11,26 +31,31 @@ window.eventsData = window.eventsData || {
     }
 };
 
-// ==========================================
-// 2. GESTION DU STOCKAGE LOCAL (LocalStorage)
-// ==========================================
-function getUsers() {
-    try { return JSON.parse(localStorage.getItem('registered_users')) || []; } catch(e) { return []; }
-}
-function saveUsers(users) { localStorage.setItem('registered_users', JSON.stringify(users)); }
+function initCarousel() {
+    const track = document.querySelector('.carousel-track') || document.getElementById('carousel-track');
+    const prevBtn = document.querySelector('.carousel-btn.prev') || document.getElementById('prev-btn');
+    const nextBtn = document.querySelector('.carousel-btn.next') || document.getElementById('next-btn');
 
-function getSubmissions() {
-    try { return JSON.parse(localStorage.getItem('form_submissions')) || []; } catch(e) { return []; }
-}
-function saveSubmissions(submissions) { localStorage.setItem('form_submissions', JSON.stringify(submissions)); }
+    if (!track) return; // Si pas de carrousel sur la page actuelle, on sort proprement
 
-function getChatMessages() {
-    try { return JSON.parse(localStorage.getItem('chat_messages')) || []; } catch(e) { return []; }
+    let scrollAmount = 0;
+    const cardWidth = 320; // Largeur estimée d'une carte + margin
+
+    if (nextBtn) {
+        nextBtn.addEventListener('click', () => {
+            track.scrollBy({ left: cardWidth, behavior: 'smooth' });
+        });
+    }
+
+    if (prevBtn) {
+        prevBtn.addEventListener('click', () => {
+            track.scrollBy({ left: -cardWidth, behavior: 'smooth' });
+        });
+    }
 }
-function saveChatMessages(msgs) { localStorage.setItem('chat_messages', JSON.stringify(msgs)); }
 
 // ==========================================
-// 3. AUTHENTIFICATION & INTERFACE UTILISATEUR
+// 2. GESTION DU PROFIL & DE L'AUTHENTIFICATION
 // ==========================================
 function updateAuthUI() {
     const user = JSON.parse(localStorage.getItem('user_session'));
@@ -55,13 +80,12 @@ function updateAuthUI() {
         `;
 
         document.getElementById('btn-logout')?.addEventListener('click', () => {
+            if (user.username) {
+                db.ref('presence/' + user.username.toLowerCase().replace(/\./g, '_')).remove();
+            }
             localStorage.removeItem('user_session');
-            localStorage.removeItem('admin_online');
             location.reload();
         });
-
-        const nameInput = document.getElementById('name');
-        if (nameInput && !user.isAdmin) nameInput.value = user.username;
     }
 }
 
@@ -69,16 +93,9 @@ function setupAuth() {
     const regModal = document.getElementById('register-modal');
     const adminModal = document.getElementById('admin-modal');
 
-    // Ouverture des modales
-    document.getElementById('btn-open-register')?.addEventListener('click', () => { 
-        if(regModal) regModal.style.display = 'flex'; 
-    });
-    
-    document.getElementById('btn-open-admin-login')?.addEventListener('click', () => { 
-        if(adminModal) adminModal.style.display = 'flex'; 
-    });
+    document.getElementById('btn-open-register')?.addEventListener('click', () => { if(regModal) regModal.style.display = 'flex'; });
+    document.getElementById('btn-open-admin-login')?.addEventListener('click', () => { if(adminModal) adminModal.style.display = 'flex'; });
 
-    // Fermeture des modales
     document.querySelectorAll('.close-modal').forEach(btn => {
         btn.addEventListener('click', () => {
             if(regModal) regModal.style.display = 'none';
@@ -86,267 +103,84 @@ function setupAuth() {
         });
     });
 
-    // Onglets (Connexion / Inscription)
-    const tabLogin = document.getElementById('tab-login');
-    const tabRegister = document.getElementById('tab-register');
-    const formLogin = document.getElementById('form-login');
-    const formRegister = document.getElementById('form-register');
-
-    if (tabLogin && tabRegister && formLogin && formRegister) {
-        tabLogin.addEventListener('click', () => {
-            tabLogin.style.borderBottom = "3px solid #0284c7";
-            tabRegister.style.borderBottom = "none";
-            formLogin.style.display = 'block';
-            formRegister.style.display = 'none';
-        });
-
-        tabRegister.addEventListener('click', () => {
-            tabRegister.style.borderBottom = "3px solid #16a34a";
-            tabLogin.style.borderBottom = "none";
-            formRegister.style.display = 'block';
-            formLogin.style.display = 'none';
-        });
-    }
-
-    // Prévisualisation de l'avatar
-    const regUsername = document.getElementById('reg-username');
-    const regAvatar = document.getElementById('reg-avatar');
-    const avatarPreviewImg = document.getElementById('avatar-preview-img');
-
-    regAvatar?.addEventListener('input', (e) => {
-        const url = e.target.value.trim();
-        if (avatarPreviewImg) {
-            avatarPreviewImg.src = url || "https://api.dicebear.com/7.x/bottts/svg?seed=" + (regUsername?.value || "Papote");
-        }
-    });
-
-    regUsername?.addEventListener('input', (e) => {
-        if (avatarPreviewImg && !regAvatar?.value.trim()) {
-            avatarPreviewImg.src = "https://api.dicebear.com/7.x/bottts/svg?seed=" + (e.target.value || "Papote");
-        }
-    });
-
-    // --- CRÉER UN COMPTE ---
+    // --- INSCRIPTION EN LIGNE ---
     document.getElementById('btn-submit-register')?.addEventListener('click', (e) => {
         e.preventDefault();
-        const username = regUsername?.value.trim();
+        const username = document.getElementById('reg-username')?.value.trim();
         const password = document.getElementById('reg-password')?.value.trim();
-        const avatar = regAvatar?.value.trim() || `https://api.dicebear.com/7.x/bottts/svg?seed=${username}`;
+        const avatar = document.getElementById('reg-avatar')?.value.trim() || `https://api.dicebear.com/7.x/bottts/svg?seed=${username}`;
 
         if (!username || !password) {
-            alert("Veuillez remplir le pseudo ET le mot de passe.");
+            alert("Veuillez remplir le pseudo et le mot de passe.");
             return;
         }
 
-        let users = getUsers();
-        if (users.some(u => u.username.toLowerCase() === username.toLowerCase())) {
-            alert("Ce pseudo est déjà utilisé. Veuillez en choisir un autre ou vous connecter.");
-            return;
-        }
+        const userKey = username.toLowerCase().replace(/\./g, '_');
+        const userRef = db.ref('users/' + userKey);
 
-        const newUser = { id: Date.now(), username: username, password: password, avatar: avatar, createdAt: new Date().toLocaleDateString('fr-FR') };
-        users.push(newUser);
-        saveUsers(users);
-
-        const session = { username: newUser.username, avatar: newUser.avatar, isAdmin: false };
-        localStorage.setItem('user_session', JSON.stringify(session));
-
-        alert("Inscription réussie !");
-        if(regModal) regModal.style.display = 'none';
-        updateAuthUI();
+        userRef.once('value', snapshot => {
+            if (snapshot.exists()) {
+                alert("Ce pseudo est déjà utilisé. Choisissez-en un autre.");
+            } else {
+                const userData = { username, password, avatar, createdAt: new Date().toLocaleDateString('fr-FR') };
+                userRef.set(userData).then(() => {
+                    const session = { username: userData.username, avatar: userData.avatar, isAdmin: false };
+                    localStorage.setItem('user_session', JSON.stringify(session));
+                    db.ref('presence/' + userKey).set(true);
+                    alert("Compte créé avec succès !");
+                    if(regModal) regModal.style.display = 'none';
+                    location.reload();
+                });
+            }
+        });
     });
 
-    // --- SE CONNECTER ---
+    // --- CONNEXION MEMBRE ---
     document.getElementById('btn-submit-login')?.addEventListener('click', (e) => {
         e.preventDefault();
         const username = document.getElementById('login-username')?.value.trim();
         const password = document.getElementById('login-password')?.value.trim();
 
         if (!username || !password) {
-            alert("Veuillez entrer votre pseudo et votre mot de passe.");
+            alert("Veuillez remplir tous les champs.");
             return;
         }
 
-        const users = getUsers();
-        const foundUser = users.find(u => u.username.toLowerCase() === username.toLowerCase() && u.password === password);
-
-        if (foundUser) {
-            const session = { username: foundUser.username, avatar: foundUser.avatar, isAdmin: false };
-            localStorage.setItem('user_session', JSON.stringify(session));
-            if(regModal) regModal.style.display = 'none';
-            updateAuthUI();
-        } else {
-            alert("Pseudo ou mot de passe incorrect.");
-        }
+        const userKey = username.toLowerCase().replace(/\./g, '_');
+        db.ref('users/' + userKey).once('value', snapshot => {
+            const userData = snapshot.val();
+            if (userData && userData.password === password) {
+                const session = { username: userData.username, avatar: userData.avatar, isAdmin: false };
+                localStorage.setItem('user_session', JSON.stringify(session));
+                db.ref('presence/' + userKey).set(true);
+                if(regModal) regModal.style.display = 'none';
+                location.reload();
+            } else {
+                alert("Pseudo ou mot de passe incorrect.");
+            }
+        });
     });
 
     // --- CONNEXION ADMIN ---
     document.getElementById('btn-submit-admin')?.addEventListener('click', (e) => {
         e.preventDefault();
         const pass = document.getElementById('admin-pass')?.value.trim();
-        const errorMsg = document.getElementById('admin-error-msg');
-
         if (pass === 'admin123') {
             const session = { username: "Admin", avatar: "https://api.dicebear.com/7.x/bottts/svg?seed=Admin", isAdmin: true };
             localStorage.setItem('user_session', JSON.stringify(session));
-            localStorage.setItem('admin_online', 'true');
-
+            db.ref('presence/Admin').set(true);
             if(adminModal) adminModal.style.display = 'none';
-            updateAuthUI();
+            location.reload();
         } else {
-            if (errorMsg) {
-                errorMsg.textContent = "Mot de passe incorrect.";
-                errorMsg.style.display = "block";
-            } else {
-                alert("Mot de passe administrateur incorrect.");
-            }
+            alert("Mot de passe admin incorrect.");
         }
     });
 }
 
 // ==========================================
-// 4. CARROUSEL D'IMAGES
-// ==========================================
-const slides = [
-    { image: "assets/images/slideshow/coraline.jpg", tagLine: "Questionnaire satisfaction <span>en ligne</span>" },
-    { image: "assets/images/slideshow/coraline2.jpg", tagLine: "Ateliers et activités <span>toute l'année</span>" }
-];
-
-let currentIndex = 0;
-
-function createDots() {
-    const dotsContainer = document.getElementById('dots');
-    if (!dotsContainer) return;
-    dotsContainer.innerHTML = '';
-    slides.forEach((_, index) => {
-        const dot = document.createElement('div');
-        dot.style.width = '12px';
-        dot.style.height = '12px';
-        dot.style.borderRadius = '50%';
-        dot.style.backgroundColor = (index === currentIndex) ? '#0284c7' : '#ccc';
-        dot.style.cursor = 'pointer';
-        
-        dot.addEventListener('click', () => {
-            currentIndex = index;
-            updateSlide();
-        });
-        dotsContainer.appendChild(dot);
-    });
-}
-
-function updateSlide() {
-    const bannerImg = document.getElementById('banner-img');
-    const bannerTxt = document.getElementById('banner-txt');
-
-    if (bannerImg && slides[currentIndex]) {
-        bannerImg.src = slides[currentIndex].image;
-        bannerImg.onerror = () => { bannerImg.src = "assets/images/coraline.jpg"; };
-    }
-    if (bannerTxt && slides[currentIndex]) {
-        bannerTxt.innerHTML = slides[currentIndex].tagLine;
-    }
-    createDots();
-}
-
-setInterval(() => {
-    if (slides.length > 1) {
-        currentIndex = (currentIndex + 1) % slides.length;
-        updateSlide();
-    }
-}, 5000);
-
-// ==========================================
-// 5. CALENDRIER INTERACTIF
-// ==========================================
-const monthNames = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
-let currentDate = new Date();
-let selectedDateStr = "";
-
-function renderCalendar() {
-    const daysContainer = document.getElementById('calendar-days');
-    if (!daysContainer) return;
-
-    const year = currentDate.getFullYear();
-    const month = currentDate.getMonth();
-
-    const monthYearElement = document.getElementById('calendar-month-year');
-    if (monthYearElement) monthYearElement.textContent = monthNames[month] + " " + year;
-
-    daysContainer.innerHTML = '';
-
-    let firstDayIndex = new Date(year, month, 1).getDay();
-    firstDayIndex = (firstDayIndex === 0) ? 6 : firstDayIndex - 1;
-    const totalDays = new Date(year, month + 1, 0).getDate();
-
-    for (let i = 0; i < firstDayIndex; i++) {
-        const emptyDiv = document.createElement('div');
-        emptyDiv.classList.add('empty');
-        daysContainer.appendChild(emptyDiv);
-    }
-
-    const today = new Date();
-
-    for (let day = 1; day <= totalDays; day++) {
-        const dayDiv = document.createElement('div');
-        const formattedDate = year + "-" + String(month + 1).padStart(2, '0') + "-" + String(day).padStart(2, '0');
-        const eventData = window.eventsData[formattedDate];
-
-        if (eventData && eventData.icon) {
-            dayDiv.innerHTML = `<span>${day}</span> <span class="event-icon">${eventData.icon}</span>`;
-            dayDiv.classList.add('has-event');
-        } else {
-            dayDiv.textContent = day;
-        }
-
-        if (day === today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
-            dayDiv.classList.add('today');
-        }
-
-        if (formattedDate === selectedDateStr) {
-            dayDiv.classList.add('selected');
-        }
-
-        dayDiv.addEventListener('click', () => {
-            selectedDateStr = formattedDate;
-
-            const hiddenInput = document.getElementById('selected-date');
-            if (hiddenInput) hiddenInput.value = formattedDate;
-
-            const displayElement = document.getElementById('selected-date-display');
-            if (displayElement) {
-                displayElement.innerHTML = 'Date choisie : <span>' + day + ' ' + monthNames[month] + ' ' + year + '</span>';
-            }
-
-            const eventPreview = document.getElementById('event-preview');
-            if (eventData && eventPreview) {
-                document.getElementById('event-title').textContent = eventData.title;
-                document.getElementById('event-image').src = eventData.image;
-                document.getElementById('event-description').textContent = eventData.description;
-                document.getElementById('event-link').href = eventData.link;
-                eventPreview.style.display = "block";
-            } else if (eventPreview) {
-                eventPreview.style.display = "none";
-            }
-
-            renderCalendar();
-        });
-
-        daysContainer.appendChild(dayDiv);
-    }
-}
-
-// ==========================================
-// 6. INJECTION DU TCHAT FLOTTANT (Bas à droite)
+// 3. CHAT FLOTTANT TEMPS RÉEL (Multi-Discussions)
 // ==========================================
 function initFloatingChat() {
-    const user = JSON.parse(localStorage.getItem('user_session'));
-
-    // 🟢 STATUT EN LIGNE : Si une session existe, on est En Ligne
-    const isOnline = !!user;
-    const statusBadge = isOnline 
-        ? `<span style="color: #4ade80; font-size: 12px; font-weight: normal;">🟢 En ligne</span>`
-        : `<span style="color: #94a3b8; font-size: 12px; font-weight: normal;">⚪ Hors ligne</span>`;
-
     const chatWidgetHTML = `
         <style>
             #floating-chat-btn { position: fixed; bottom: 20px; right: 20px; background: #0284c7; color: white; border: none; padding: 12px 18px; border-radius: 30px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 9999; font-size: 15px; }
@@ -358,11 +192,8 @@ function initFloatingChat() {
             .msg-bubble img { max-width: 100%; border-radius: 6px; margin-top: 4px; display: block; }
             .msg-user { background: #0284c7; color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
             .msg-admin { background: #e2e8f0; color: #0f172a; align-self: flex-start; border-bottom-left-radius: 2px; }
-            
             .emoji-bar { background: #f1f5f9; padding: 4px 8px; display: flex; gap: 6px; border-top: 1px solid #e2e8f0; }
-            .emoji-btn { background: none; border: none; font-size: 16px; cursor: pointer; padding: 2px; }
-            .emoji-btn:hover { transform: scale(1.2); }
-            
+            .emoji-btn { background: none; border: none; font-size: 16px; cursor: pointer; }
             .chat-input-area { display: flex; padding: 8px; background: white; border-top: 1px solid #e2e8f0; }
             .chat-input-area input { flex: 1; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; outline: none; }
             .chat-input-area button { background: #16a34a; color: white; border: none; padding: 8px 12px; margin-left: 5px; border-radius: 6px; cursor: pointer; font-weight: bold; }
@@ -373,12 +204,12 @@ function initFloatingChat() {
         <div id="floating-chat-box">
             <div class="chat-header">
                 <div class="chat-header-top">
-                    <div>💬 Chat Support ${statusBadge}</div>
+                    <div>💬 Chat Support <span style="font-size:12px; color:#4ade80;">🟢 En ligne</span></div>
                     <span id="close-chat" style="cursor:pointer; font-size:20px;">&times;</span>
                 </div>
                 <div id="admin-user-selector-container" style="display:none; margin-top: 4px;">
-                    <select id="admin-chat-user-select" style="width:100%; padding:4px; border-radius:4px; border:none; font-size:12px;">
-                        <option value="">-- Choisir une discussion utilisateur --</option>
+                    <select id="admin-chat-user-select" style="width:100%; padding:4px; border-radius:4px; border:none; font-size:12px; font-weight:bold; background:#f1f5f9; color:#0f172a;">
+                        <option value="">-- Chargement des membres... --</option>
                     </select>
                 </div>
             </div>
@@ -391,11 +222,10 @@ function initFloatingChat() {
                 <button class="emoji-btn" onclick="addEmoji('❤️')">❤️</button>
                 <button class="emoji-btn" onclick="addEmoji('👍')">👍</button>
                 <button class="emoji-btn" onclick="addEmoji('🎉')">🎉</button>
-                <button class="emoji-btn" onclick="sendGifPrompt()" style="font-size:11px; font-weight:bold; background:#e2e8f0; border-radius:4px; padding:2px 5px;">🖼️ GIF</button>
             </div>
 
             <div class="chat-input-area">
-                <input type="text" id="chat-user-input" placeholder="Message ou lien d'image/GIF...">
+                <input type="text" id="chat-user-input" placeholder="Message ou lien GIF/image...">
                 <button id="btn-send-chat">Envoyer</button>
             </div>
         </div>
@@ -426,81 +256,64 @@ function initFloatingChat() {
         if (chatBox.style.display === 'flex') {
             if (currentSession.isAdmin) {
                 userSelectContainer.style.display = 'block';
-                populateUserDropdown();
+                loadAdminUserList();
             } else {
                 userSelectContainer.style.display = 'none';
+                listenToMessages(currentSession.username);
             }
-            renderMessages();
         }
     });
 
     btnClose.addEventListener('click', () => { chatBox.style.display = 'none'; });
 
-    window.addEmoji = function(emoji) {
-        if (input) input.value += emoji;
-    };
+    window.addEmoji = function(emoji) { if (input) input.value += emoji; };
 
-    window.sendGifPrompt = function() {
-        const gifUrl = prompt("Collez le lien URL de votre GIF (ex: https://media.giphy.com/...):");
-        if (gifUrl && input) {
-            input.value = gifUrl;
-            sendMessage();
-        }
-    };
+    function loadAdminUserList() {
+        db.ref('users').on('value', snapshot => {
+            const users = snapshot.val() || {};
+            const usernames = Object.values(users).map(u => u.username).filter(u => u !== 'Admin');
+            
+            userSelect.innerHTML = '<option value="">-- Choisir une discussion --</option>' + 
+                usernames.map(u => `<option value="${u}">👤 Chat avec ${u}</option>`).join('');
 
-    // Remplit la liste déroulante de l'Admin avec les membres ayant envoyé un message (ex: Poppy)
-    function populateUserDropdown() {
-        const allMsgs = getChatMessages();
-        const usersWithChat = [...new Set(allMsgs.map(m => m.username))].filter(u => u !== 'Admin');
-        
-        userSelect.innerHTML = '<option value="">-- Choisir une discussion --</option>' + 
-            usersWithChat.map(u => `<option value="${u}">${u}</option>`).join('');
-
-        if (selectedUserForAdmin) {
-            userSelect.value = selectedUserForAdmin;
-        }
+            if (!selectedUserForAdmin && usernames.length > 0) {
+                selectedUserForAdmin = usernames[0];
+                userSelect.value = selectedUserForAdmin;
+            }
+            if (selectedUserForAdmin) listenToMessages(selectedUserForAdmin);
+        });
     }
 
     userSelect.addEventListener('change', (e) => {
         selectedUserForAdmin = e.target.value;
-        renderMessages();
+        if (selectedUserForAdmin) listenToMessages(selectedUserForAdmin);
     });
 
-    function renderMessages() {
-        const currentSession = JSON.parse(localStorage.getItem('user_session'));
-        if (!currentSession) return;
-        const allMsgs = getChatMessages();
-        
-        let filteredMsgs = [];
+    function listenToMessages(targetUser) {
+        db.ref('chats/' + targetUser.toLowerCase().replace(/\./g, '_')).on('value', snapshot => {
+            const currentSession = JSON.parse(localStorage.getItem('user_session'));
+            const msgs = snapshot.val() || {};
+            const msgList = Object.values(msgs);
 
-        if (currentSession.isAdmin) {
-            // Si l'admin a sélectionné un utilisateur (ex: Poppy)
-            if (selectedUserForAdmin) {
-                filteredMsgs = allMsgs.filter(m => m.username === selectedUserForAdmin || (m.fromAdmin && m.targetUser === selectedUserForAdmin));
-            } else {
-                container.innerHTML = `<p style="text-align:center; color:#64748b; font-size:12px; margin-top:20px;">Veuillez sélectionner un utilisateur en haut pour voir la discussion.</p>`;
+            if (msgList.length === 0) {
+                container.innerHTML = `<p style="text-align:center; color:#94a3b8; font-size:12px; margin-top:20px;">Aucun message avec ${targetUser}.</p>`;
                 return;
             }
-        } else {
-            // Un utilisateur normal ne voit QUE ses propres échanges avec l'admin
-            filteredMsgs = allMsgs.filter(m => m.username === currentSession.username || (m.fromAdmin && m.targetUser === currentSession.username));
-        }
 
-        container.innerHTML = filteredMsgs.map(m => {
-            const isImage = m.text.match(/\.(jpeg|jpg|gif|png|webp)$/i) || m.text.includes('giphy.com') || m.text.includes('tenor.com');
-            const content = isImage ? `<img src="${m.text}" alt="GIF">` : m.text;
+            container.innerHTML = msgList.map(m => {
+                const isImage = m.text.match(/\.(jpeg|jpg|gif|png|webp)$/i) || m.text.includes('giphy.com') || m.text.includes('tenor.com');
+                const content = isImage ? `<img src="${m.text}" alt="GIF">` : m.text;
+                const isMe = (currentSession.isAdmin && m.fromAdmin) || (!currentSession.isAdmin && !m.fromAdmin);
 
-            // Déterminer la bulle à droite ou à gauche selon qui regarde
-            const isMe = (currentSession.isAdmin && m.fromAdmin) || (!currentSession.isAdmin && !m.fromAdmin);
-
-            return `
-                <div class="msg-bubble ${isMe ? 'msg-user' : 'msg-admin'}">
-                    <strong style="display:block; font-size:11px; opacity:0.8;">${m.senderName}</strong>
-                    ${content}
-                </div>
-            `;
-        }).join('');
-        container.scrollTop = container.scrollHeight;
+                return `
+                    <div class="msg-bubble ${isMe ? 'msg-user' : 'msg-admin'}">
+                        <strong style="display:block; font-size:11px; opacity:0.8;">${m.senderName}</strong>
+                        ${content}
+                    </div>
+                `;
+            }).join('');
+            container.scrollTop = container.scrollHeight;
+        });
     }
 
     btnSend.addEventListener('click', sendMessage);
@@ -511,162 +324,31 @@ function initFloatingChat() {
         const text = input.value.trim();
         if (!text || !currentSession) return;
 
-        if (currentSession.isAdmin && !selectedUserForAdmin) {
-            alert("⚠️ Sélectionnez un utilisateur dans le menu déroulant avant d'envoyer un message !");
+        const target = currentSession.isAdmin ? selectedUserForAdmin : currentSession.username;
+        if (!target) {
+            alert("⚠️ Sélectionnez d'abord un utilisateur dans le menu déroulant !");
             return;
         }
 
-        const allMsgs = getChatMessages();
-        allMsgs.push({
-            id: Date.now(),
-            username: currentSession.isAdmin ? selectedUserForAdmin : currentSession.username,
-            targetUser: currentSession.isAdmin ? selectedUserForAdmin : currentSession.username,
+        const msgData = {
             senderName: currentSession.username,
             text: text,
             fromAdmin: currentSession.isAdmin,
-            timestamp: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
-        });
+            timestamp: Date.now()
+        };
 
-        saveChatMessages(allMsgs);
-        input.value = '';
-        renderMessages();
-    }
-}
-
-
-// ==========================================
-// 7. LOGIQUE SPÉCIFIQUE À L'ATELIER DU 3 AOÛT
-// ==========================================
-const WORKSHOP_3AOUT_ID = "2026-08-03";
-
-function renderProposals3Aout() {
-    const proposalsList = document.getElementById('proposals-list');
-    if (!proposalsList) return;
-
-    const proposals = JSON.parse(localStorage.getItem('workshop_proposals')) || [];
-    const workshopProposals = proposals.filter(p => p.workshopId === WORKSHOP_3AOUT_ID || p.workshopName?.includes('3 Août'));
-
-    if (workshopProposals.length === 0) {
-        proposalsList.innerHTML = "<p style='color:#64748b;'>Aucune proposition pour le moment. Soyez le premier !</p>";
-        return;
-    }
-
-    proposalsList.innerHTML = workshopProposals.map(p => `
-        <div class="proposal-card" style="background:#0f172a; border:1px solid #334155; padding:12px; border-radius:8px; margin-bottom:10px;">
-            <div class="proposal-header" style="display:flex; justify-content:space-between; font-size:12px; color:#94a3b8; margin-bottom:6px;">
-                <span>👤 ${p.userName}</span>
-                <span>🕒 ${p.date || p.submittedAt || ''}</span>
-            </div>
-            <p style="margin: 5px 0; color:#f8fafc;">${p.message}</p>
-            ${p.reply ? `
-                <div style="background: rgba(2, 132, 199, 0.15); border-left: 3px solid #0284c7; padding: 8px; margin-top: 8px; border-radius: 4px;">
-                    <strong style="color:#38bdf8;">🛠️ Réponse de l'Admin :</strong>
-                    <p style="margin:3px 0 0 0; color:#cbd5e1;">${p.reply}</p>
-                </div>
-            ` : `<small style="color:#f59e0b; font-weight:bold;">⌛ En attente de réponse de l'admin</small>`}
-        </div>
-    `).join('');
-}
-
-function init3AoutPage() {
-    const proposalForm = document.getElementById('proposal-form');
-    const proposalInput = document.getElementById('proposal-text');
-
-    renderProposals3Aout();
-
-    if (proposalForm && proposalInput) {
-        proposalForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const session = JSON.parse(localStorage.getItem('user_session'));
-
-            if (!session) {
-                alert("⚠️ Vous devez être connecté(e) pour faire une proposition !");
-                const regModal = document.getElementById('register-modal');
-                if (regModal) regModal.style.display = 'flex';
-                return;
-            }
-
-            const messageText = proposalInput.value.trim();
-            if (!messageText) return;
-
-            const newProposal = {
-                id: Date.now(),
-                workshopId: WORKSHOP_3AOUT_ID,
-                workshopName: "3 Août - Film, Débat & Just Dance",
-                userName: session.username,
-                userAvatar: session.avatar,
-                message: messageText,
-                reply: null,
-                date: new Date().toLocaleString('fr-FR'),
-                submittedAt: new Date().toLocaleString('fr-FR')
-            };
-
-            let proposals = JSON.parse(localStorage.getItem('workshop_proposals')) || [];
-            proposals.push(newProposal);
-            localStorage.setItem('workshop_proposals', JSON.stringify(proposals));
-
-            proposalInput.value = "";
-            renderProposals3Aout();
+        db.ref('chats/' + target.toLowerCase().replace(/\./g, '_')).push(msgData).then(() => {
+            input.value = '';
         });
     }
 }
 
 // ==========================================
-// 8. INITIALISATION GLOBALE
+// 4. INITIALISATION DE LA PAGE
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
+    initCarousel();
     setupAuth();
     updateAuthUI();
-    renderCalendar();
-    createDots();
     initFloatingChat();
-    init3AoutPage();
-
-    // Boutons navigation calendrier
-    document.getElementById('prev-month')?.addEventListener('click', () => {
-        currentDate.setMonth(currentDate.getMonth() - 1);
-        renderCalendar();
-    });
-
-    document.getElementById('next-month')?.addEventListener('click', () => {
-        currentDate.setMonth(currentDate.getMonth() + 1);
-        renderCalendar();
-    });
-
-    // Formulaire d'inscription / avis atelier
-    const workshopForm = document.getElementById('workshop-form');
-    if (workshopForm) {
-        workshopForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const userSession = JSON.parse(localStorage.getItem('user_session'));
-
-            const formData = {
-                id: Date.now(),
-                name: userSession ? userSession.username : (document.getElementById('name')?.value || "Anonyme"),
-                satisfaction: document.getElementById('satisfaction')?.value || "Non spécifié",
-                eventDate: document.getElementById('selected-date')?.value || "Non précisée",
-                submittedAt: new Date().toLocaleString('fr-FR')
-            };
-
-            let submissions = getSubmissions();
-            submissions.push(formData);
-            saveSubmissions(submissions);
-
-            const formMessage = document.getElementById('form-message');
-            if (formMessage) {
-                formMessage.style.color = '#16a34a';
-                formMessage.textContent = '✅ Réponses enregistrées !';
-            }
-            workshopForm.reset();
-        });
-		const firebaseConfig = {
-  apiKey: "AIzaSyDt0pDcCjKaRueh4O7gS9G6gzsKKyUdLnE",
-  authDomain: "atelier-papote.firebaseapp.com",
-  projectId: "atelier-papote",
-  storageBucket: "atelier-papote.firebasestorage.app",
-  messagingSenderId: "1013068157356",
-  appId: "1:1013068157356:web:67166cde4ea7a0748e2a09",
-  measurementId: "G-PL3ZE3X8TJ"
-};
-    }
 });
