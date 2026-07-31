@@ -15,32 +15,19 @@ const eventsData = {
 // 2. GESTION DU STOCKAGE LOCAL (LocalStorage)
 // ==========================================
 function getUsers() {
-    try {
-        return JSON.parse(localStorage.getItem('registered_users')) || [];
-    } catch(e) {
-        return [];
-    }
+    try { return JSON.parse(localStorage.getItem('registered_users')) || []; } catch(e) { return []; }
 }
-
-function saveUsers(users) {
-    localStorage.setItem('registered_users', JSON.stringify(users));
-}
+function saveUsers(users) { localStorage.setItem('registered_users', JSON.stringify(users)); }
 
 function getSubmissions() {
-    try {
-        return JSON.parse(localStorage.getItem('form_submissions')) || [];
-    } catch(e) {
-        return [];
-    }
+    try { return JSON.parse(localStorage.getItem('form_submissions')) || []; } catch(e) { return []; }
 }
+function saveSubmissions(submissions) { localStorage.setItem('form_submissions', JSON.stringify(submissions)); }
+
 function getChatMessages() {
     try { return JSON.parse(localStorage.getItem('chat_messages')) || []; } catch(e) { return []; }
 }
 function saveChatMessages(msgs) { localStorage.setItem('chat_messages', JSON.stringify(msgs)); }
-
-function saveSubmissions(submissions) {
-    localStorage.setItem('form_submissions', JSON.stringify(submissions));
-}
 
 // ==========================================
 // 3. AUTHENTIFICATION & INTERFACE UTILISATEUR
@@ -59,9 +46,11 @@ function updateAuthUI() {
         `;
 
         let adminBtn = user.isAdmin ? `<a href="admin.html" class="btn-auth" style="background-color:#e11d48; color:white; text-decoration:none; padding:8px 12px; border-radius:5px; font-weight:bold; margin-right:5px;">Page Admin ➔</a>` : '';
+        let proposalBtn = `<a href="suggestions.html" class="btn-auth" style="background-color:#16a34a; color:white; text-decoration:none; padding:8px 12px; border-radius:5px; font-weight:bold; margin-right:5px;">💡 Mon Profil / Suggestions</a>`;
 
         authActions.innerHTML = `
             ${adminBtn}
+            ${proposalBtn}
             <button id="btn-logout" class="btn-auth" style="background:#64748b; color:white; border:none; padding:8px 12px; border-radius:5px; cursor:pointer;">Déconnexion</button>
         `;
 
@@ -96,7 +85,7 @@ function setupAuth() {
         });
     });
 
-    // Gestion des onglets (Connexion vs Inscription)
+    // Onglets (Connexion / Inscription)
     const tabLogin = document.getElementById('tab-login');
     const tabRegister = document.getElementById('tab-register');
     const formLogin = document.getElementById('form-login');
@@ -118,7 +107,7 @@ function setupAuth() {
         });
     }
 
-    // Gestion de la prévisualisation de l'avatar
+    // Prévisualisation de l'avatar
     const regUsername = document.getElementById('reg-username');
     const regAvatar = document.getElementById('reg-avatar');
     const avatarPreviewImg = document.getElementById('avatar-preview-img');
@@ -213,7 +202,7 @@ function setupAuth() {
 }
 
 // ==========================================
-// 4. CARROUSEL
+// 4. CARROUSEL D'IMAGES
 // ==========================================
 const slides = [
     { image: "assets/images/slideshow/coraline.jpg", tagLine: "Questionnaire satisfaction <span>en ligne</span>" },
@@ -344,12 +333,11 @@ function renderCalendar() {
 }
 
 // ==========================================
-// 4. INJECTION DU TCHAT FLOTTANT (Bas à droite)
+// 6. INJECTION DU TCHAT FLOTTANT (Bas à droite)
 // ==========================================
 function initFloatingChat() {
     const user = JSON.parse(localStorage.getItem('user_session'));
 
-    // Injecter le HTML du widget tchat
     const chatWidgetHTML = `
         <style>
             #floating-chat-btn { position: fixed; bottom: 20px; right: 20px; background: #0284c7; color: white; border: none; padding: 12px 18px; border-radius: 30px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 9999; font-size: 15px; }
@@ -388,9 +376,9 @@ function initFloatingChat() {
     const input = document.getElementById('chat-user-input');
     const btnSend = document.getElementById('btn-send-chat');
 
-    // Toggle Ouvrir / Fermer
     btnToggle.addEventListener('click', () => {
-        if (!user) {
+        const currentSession = JSON.parse(localStorage.getItem('user_session'));
+        if (!currentSession) {
             alert("⚠️ Vous devez être connecté(e) pour utiliser le tchat !");
             return;
         }
@@ -401,10 +389,10 @@ function initFloatingChat() {
     btnClose.addEventListener('click', () => { chatBox.style.display = 'none'; });
 
     function renderMessages() {
-        if (!user) return;
+        const currentSession = JSON.parse(localStorage.getItem('user_session'));
+        if (!currentSession) return;
         const allMsgs = getChatMessages();
-        // Filtrer les messages entre cet utilisateur et l'admin
-        const userMsgs = allMsgs.filter(m => m.username === user.username || (user.isAdmin && m.targetUser === user.username));
+        const userMsgs = allMsgs.filter(m => m.username === currentSession.username);
 
         container.innerHTML = userMsgs.map(m => `
             <div class="msg-bubble ${m.fromAdmin ? 'msg-admin' : 'msg-user'}">
@@ -419,16 +407,17 @@ function initFloatingChat() {
     input.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
 
     function sendMessage() {
+        const currentSession = JSON.parse(localStorage.getItem('user_session'));
         const text = input.value.trim();
-        if (!text || !user) return;
+        if (!text || !currentSession) return;
 
         const allMsgs = getChatMessages();
         allMsgs.push({
             id: Date.now(),
-            username: user.username,
-            senderName: user.username,
+            username: currentSession.username,
+            senderName: currentSession.username,
             text: text,
-            fromAdmin: user.isAdmin,
+            fromAdmin: currentSession.isAdmin,
             timestamp: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
         });
 
@@ -439,14 +428,14 @@ function initFloatingChat() {
 }
 
 // ==========================================
-// 6. INITIALISATION UNIQUE (Au chargement de la page)
+// 7. INITIALISATION UNIQUE AU CHARGEMENT
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
     setupAuth();
     updateAuthUI();
     renderCalendar();
     createDots();
-	initFloatingChat();
+    initFloatingChat();
 
     // Boutons navigation calendrier
     document.getElementById('prev-month')?.addEventListener('click', () => {
@@ -459,7 +448,7 @@ document.addEventListener('DOMContentLoaded', () => {
         renderCalendar();
     });
 
-    // Formulaire inscription atelier basique
+    // Formulaire d'inscription atelier
     const workshopForm = document.getElementById('workshop-form');
     if (workshopForm) {
         workshopForm.addEventListener('submit', (e) => {
@@ -470,7 +459,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 id: Date.now(),
                 name: userSession ? userSession.username : (document.getElementById('name')?.value || "Anonyme"),
                 satisfaction: document.getElementById('satisfaction')?.value || "Non spécifié",
-                eventDate: document.getElementById('selected-date')?.value || "Non précisée",
+               eventDate: document.getElementById('selected-date')?.value || "Non précisée",
                 submittedAt: new Date().toLocaleString('fr-FR')
             };
 
@@ -485,35 +474,3 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             workshopForm.reset();
         });
-    }
-});function updateAuthUI() {
-    const user = JSON.parse(localStorage.getItem('user_session'));
-    const authStatus = document.getElementById('auth-status');
-    const authActions = document.getElementById('auth-actions');
-
-    if (user && authStatus && authActions) {
-        authStatus.innerHTML = `
-            <div style="display:flex; align-items:center; gap:10px;">
-                <img src="${user.avatar}" style="width:38px; height:38px; border-radius:50%; object-fit:cover; border:2px solid #0284c7;" onerror="this.src='https://api.dicebear.com/7.x/bottts/svg?seed=User'">
-                <span>Bienvenue, <strong>${user.username}</strong> ${user.isAdmin ? '(Admin 🛠️)' : ''}</span>
-            </div>
-        `;
-
-        let adminBtn = user.isAdmin ? `<a href="admin.html" class="btn-auth" style="background-color:#e11d48; color:white; text-decoration:none; padding:8px 12px; border-radius:5px; font-weight:bold; margin-right:5px;">Page Admin ➔</a>` : '';
-        
-        // Bouton vers la nouvelle page de propositions pour tous les membres
-        let proposalBtn = `<a href="suggestions.html" class="btn-auth" style="background-color:#16a34a; color:white; text-decoration:none; padding:8px 12px; border-radius:5px; font-weight:bold; margin-right:5px;">💡 Mon Profil / Suggestions</a>`;
-
-        authActions.innerHTML = `
-            ${adminBtn}
-            ${proposalBtn}
-            <button id="btn-logout" class="btn-auth" style="background:#64748b; color:white; border:none; padding:8px 12px; border-radius:5px; cursor:pointer;">Déconnexion</button>
-        `;
-
-        document.getElementById('btn-logout')?.addEventListener('click', () => {
-            localStorage.removeItem('user_session');
-            location.reload();
-        });
-    }
-}
-
