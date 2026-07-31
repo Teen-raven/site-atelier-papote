@@ -1,9 +1,6 @@
 // ==========================================
-// 0. INITIALISATION FIREBASE
+// 0. INITIALISATION FIREBASE (Version Classique)
 // ==========================================
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
-
 const firebaseConfig = {
     apiKey: "AIzaSyDt0pDcCjKaRueh4O7gS9G6gzsKKyUdLnE",
     authDomain: "atelier-papote.firebaseapp.com",
@@ -15,9 +12,9 @@ const firebaseConfig = {
     measurementId: "G-PL3ZE3X8TJ"
 };
 
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-
+// Initialisation de Firebase sans les imports
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
 // ==========================================
 // 1. BASE DE DONNÉES ÉVÉNEMENTS
 // ==========================================
