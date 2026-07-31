@@ -3,38 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Espace Administration - Atelier Papote</title>
+    <title>Administration - Atelier Papote</title>
     <style>
         * { box-sizing: border-box; font-family: Arial, sans-serif; }
         body { background-color: #0f172a; color: #f8fafc; margin: 0; padding: 20px; }
         .container { max-width: 1000px; margin: 0 auto; }
         
-        /* HEADER ADMIN */
         .admin-header { display: flex; justify-content: space-between; align-items: center; background: #1e293b; padding: 15px 20px; border-radius: 10px; border: 1px solid #334155; margin-bottom: 25px; }
         .btn-back { background: #0284c7; color: white; text-decoration: none; padding: 8px 15px; border-radius: 6px; font-weight: bold; }
         .btn-logout { background: #e11d48; color: white; border: none; padding: 8px 15px; border-radius: 6px; font-weight: bold; cursor: pointer; }
 
-        /* CARTES ET SECTIONS */
         .card { background: #1e293b; padding: 20px; border-radius: 10px; margin-bottom: 25px; border: 1px solid #334155; }
         h2 { color: #38bdf8; margin-top: 0; border-bottom: 2px solid #334155; padding-bottom: 10px; font-size: 20px; }
 
-        /* BLOCS DE MESSAGES & PROPOSITIONS */
-        .item-box { background: #0f172a; border: 1px solid #334155; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
-        .item-meta { display: flex; align-items: center; gap: 10px; font-size: 14px; color: #94a3b8; margin-bottom: 10px; }
-        .item-avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 1px solid #0284c7; }
-        
-        /* FORMULAIRE DE RÉPONSE */
-        .reply-box { margin-top: 10px; padding-top: 10px; border-top: 1px dashed #334155; }
-        .reply-input { width: 75%; padding: 8px 12px; background: #1e293b; border: 1px solid #475569; color: white; border-radius: 6px; }
-        .btn-reply { background: #16a34a; color: white; border: none; padding: 8px 15px; border-radius: 6px; font-weight: bold; cursor: pointer; }
-        .btn-reply:hover { background: #15803d; }
+        /* LISTE ET TCHAT ADMIN */
+        .user-card { background: #0f172a; padding: 15px; border-radius: 8px; border: 1px solid #334155; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+        .btn-delete { background: #e11d48; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .pass-tag { background: #334155; color: #facc15; padding: 3px 8px; border-radius: 4px; font-family: monospace; font-size: 14px; }
 
-        /* TABLEAU ET BADS */
-        .badge { display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
-        .badge-green { background: rgba(22, 163, 74, 0.2); color: #4ade80; border: 1px solid #16a34a; }
-        .badge-orange { background: rgba(217, 119, 6, 0.2); color: #fbbf24; border: 1px solid #d97706; }
+        .chat-admin-box { background: #0f172a; border: 1px solid #334155; padding: 12px; border-radius: 8px; margin-bottom: 12px; }
+        .reply-field { width: 70%; padding: 8px; border-radius: 4px; border: 1px solid #475569; background: #1e293b; color: white; }
+        .btn-send { background: #16a34a; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
 
-        /* MESSAGE ACCÈS REFUSÉ */
         #access-denied { text-align: center; padding: 50px 20px; background: #1e293b; border-radius: 12px; border: 1px solid #e11d48; margin-top: 40px; }
     </style>
 </head>
@@ -44,7 +34,7 @@
         
         <div id="access-denied" style="display: none;">
             <h1 style="color: #f43f5e;">🚫 Accès Refusé</h1>
-            <p>Vous devez être connecté(e) en tant qu'administrateur pour accéder à cette page.</p>
+            <p>Seul l'administrateur a accès à cette page.</p>
             <a href="index.html" class="btn-back">➔ Retour à l'accueil</a>
         </div>
 
@@ -52,8 +42,8 @@
             
             <div class="admin-header">
                 <div>
-                    <h1 style="margin: 0; font-size: 22px;">🛠️ Espace Administration</h1>
-                    <small style="color: #94a3b8;">Gestion des réponses, suggestions et membres</small>
+                    <h1 style="margin: 0; font-size: 22px;">🛠️ Espace Administrateur</h1>
+                    <small style="color: #94a3b8;">Gestion complète des profils et conversations</small>
                 </div>
                 <div>
                     <a href="index.html" class="btn-back">← Retour au site</a>
@@ -62,30 +52,20 @@
             </div>
 
             <div class="card">
-                <h2>💡 Proposals & Questions des Membres</h2>
-                <div id="proposals-list">
-                    </div>
+                <h2>👥 Membres Inscrits & Mots de Passe</h2>
+                <div id="users-admin-list"></div>
             </div>
 
             <div class="card">
-                <h2>📝 Avis de Satisfaction (Formulaires)</h2>
-                <div id="surveys-list">
-                    </div>
-            </div>
-
-            <div class="card">
-                <h2>👥 Membres Inscrits sur le site</h2>
-                <div id="users-list">
-                    </div>
+                <h2>💬 Tchat en Direct avec les Membres</h2>
+                <div id="admin-chat-list"></div>
             </div>
 
         </div>
-
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // VERIFICATION DES DROITS ADMIN
             const session = JSON.parse(localStorage.getItem('user_session'));
 
             if (!session || !session.isAdmin) {
@@ -95,130 +75,105 @@
 
             document.getElementById('admin-content').style.display = 'block';
 
-            // Bouton Déconnexion Admin
             document.getElementById('btn-admin-logout').addEventListener('click', () => {
                 localStorage.removeItem('user_session');
                 window.location.href = 'index.html';
             });
 
-            // ----------------------------------------------------
-            // 1. AFFICHER ET RÉPONDRE AUX PROPOSITIONS (suggestions.html)
-            // ----------------------------------------------------
-            function renderProposals() {
-                const container = document.getElementById('proposals-list');
-                const proposals = JSON.parse(localStorage.getItem('workshop_proposals')) || [];
-
-                if (proposals.length === 0) {
-                    container.innerHTML = "<p style='color:#94a3b8;'>Aucune proposition reçue pour le moment.</p>";
-                    return;
-                }
-
-                container.innerHTML = proposals.map(p => `
-                    <div class="item-box">
-                        <div class="item-meta">
-                            <img src="${p.userAvatar || 'https://api.dicebear.com/7.x/bottts/svg?seed='+p.userName}" class="item-avatar">
-                            <strong>${p.userName}</strong> | 
-                            <span>Concerne : <strong style="color:#38bdf8;">${p.workshopName}</strong></span> | 
-                            <span>🕒 ${p.submittedAt || 'Date inconnue'}</span>
-                        </div>
-                        <p style="margin: 8px 0; font-size: 15px; color: #f1f5f9;">${p.message}</p>
-
-                        ${p.reply ? `
-                            <div style="background: rgba(2, 132, 199, 0.15); border-left: 4px solid #0284c7; padding: 10px; margin-top: 10px; border-radius: 4px;">
-                                <span class="badge badge-green">✔ Répondu</span>
-                                <p style="margin: 5px 0 0 0; color: #38bdf8;"><strong>Votre réponse :</strong> ${p.reply}</p>
-                            </div>
-                        ` : `
-                            <div class="reply-box">
-                                <span class="badge badge-orange">⌛ En attente</span>
-                                <div style="margin-top: 8px; display: flex; gap: 10px;">
-                                    <input type="text" id="reply-input-${p.id}" class="reply-input" placeholder="Saisissez votre réponse pour cet utilisateur...">
-                                    <button onclick="sendReply(${p.id})" class="btn-reply">Envoyer</button>
-                                </div>
-                            </div>
-                        `}
-                    </div>
-                `).join('');
-            }
-
-            // Enregistrer la réponse de l'admin
-            window.sendReply = function(id) {
-                const input = document.getElementById(`reply-input-${id}`);
-                const replyText = input ? input.value.trim() : "";
-
-                if (!replyText) {
-                    alert("Veuillez saisir un texte avant d'envoyer la réponse !");
-                    return;
-                }
-
-                let proposals = JSON.parse(localStorage.getItem('workshop_proposals')) || [];
-                proposals = proposals.map(p => {
-                    if (p.id === id) {
-                        p.reply = replyText;
-                    }
-                    return p;
-                });
-
-                localStorage.setItem('workshop_proposals', JSON.stringify(proposals));
-                renderProposals();
-            };
-
-            // ----------------------------------------------------
-            // 2. AFFICHER LES AVIS DE SATISFACTION
-            // ----------------------------------------------------
-            function renderSurveys() {
-                const container = document.getElementById('surveys-list');
-                const submissions = JSON.parse(localStorage.getItem('form_submissions')) || [];
-
-                if (submissions.length === 0) {
-                    container.innerHTML = "<p style='color:#94a3b8;'>Aucun avis transmis via les formulaires d'atelier.</p>";
-                    return;
-                }
-
-                container.innerHTML = submissions.map(s => `
-                    <div class="item-box">
-                        <div class="item-meta">
-                            <strong>👤 ${s.name}</strong> | 
-                            <span>Atelier : <strong>${s.workshopName || s.eventDate || 'Général'}</strong></span> | 
-                            <span>🕒 ${s.submittedAt}</span>
-                        </div>
-                        <p style="margin: 5px 0;"><strong>Note / Satisfaction :</strong> ${s.satisfaction}</p>
-                        <p style="margin: 5px 0; color: #cbd5e1;"><strong>Commentaire :</strong> ${s.comment || 'Aucun'}</p>
-                    </div>
-                `).join('');
-            }
-
-            // ----------------------------------------------------
-            // 3. AFFICHER LES MEMBRES INSCRITS
-            // ----------------------------------------------------
-            function renderUsers() {
-                const container = document.getElementById('users-list');
+            // --- 1. AFFICHER ET SUPPRIMER LES PROFILS (AVEC MDP) ---
+            function renderUsersAdmin() {
+                const container = document.getElementById('users-admin-list');
                 const users = JSON.parse(localStorage.getItem('registered_users')) || [];
 
                 if (users.length === 0) {
-                    container.innerHTML = "<p style='color:#94a3b8;'>Aucun utilisateur enregistré pour le moment.</p>";
+                    container.innerHTML = "<p style='color:#94a3b8;'>Aucun membre inscrit.</p>";
                     return;
                 }
 
-                container.innerHTML = `
-                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px;">
-                        ${users.map(u => `
-                            <div style="background:#0f172a; padding:12px; border-radius:8px; border:1px solid #334155; display:flex; align-items:center; gap:12px;">
-                                <img src="${u.avatar}" style="width:40px; height:40px; border-radius:50%; object-fit:cover; border:2px solid #0284c7;" onerror="this.src='https://api.dicebear.com/7.x/bottts/svg?seed=User'">
-                                <div>
-                                    <strong style="display:block; font-size:15px; color:#f8fafc;">${u.username}</strong>
-                                    <small style="color:#64748b;">Inscrit(e) le : ${u.createdAt || 'Inconnue'}</small>
-                                </div>
+                container.innerHTML = users.map(u => `
+                    <div class="user-card">
+                        <div style="display:flex; align-items:center; gap:12px;">
+                            <img src="${u.avatar}" style="width:40px; height:40px; border-radius:50%; object-fit:cover; border:2px solid #0284c7;" onerror="this.src='https://api.dicebear.com/7.x/bottts/svg?seed=User'">
+                            <div>
+                                <strong style="color:white;">${u.username}</strong>
+                                <small style="display:block; color:#64748b;">Créé le : ${u.createdAt || 'Inconnu'}</small>
                             </div>
-                        `).join('')}
+                        </div>
+                        <div>
+                            <span>🔑 Mot de passe : <strong class="pass-tag">${u.password}</strong></span>
+                            <button onclick="deleteUser(${u.id})" class="btn-delete" style="margin-left:15px;">🗑️ Supprimer</button>
+                        </div>
                     </div>
-                `;
+                `).join('');
             }
 
-            // Initialisation des données
-            renderProposals();
-            renderSurveys();
-            renderUsers();
+            // Supprimer un profil
+            window.deleteUser = function(id) {
+                if (confirm("⚠️ Voulez-vous vraiment supprimer ce membre définitivement ?")) {
+                    let users = JSON.parse(localStorage.getItem('registered_users')) || [];
+                    users = users.filter(u => u.id !== id);
+                    localStorage.setItem('registered_users', JSON.stringify(users));
+                    renderUsersAdmin();
+                }
+            };
+
+            // --- 2. RÉPONDRE AUX TCHATS DIRECTS ---
+            function renderAdminChat() {
+                const container = document.getElementById('admin-chat-list');
+                const messages = JSON.parse(localStorage.getItem('chat_messages')) || [];
+
+                if (messages.length === 0) {
+                    container.innerHTML = "<p style='color:#94a3b8;'>Aucun message reçu dans le tchat.</p>";
+                    return;
+                }
+
+                // Regrouper par utilisateur
+                const usersWithMsgs = [...new Set(messages.map(m => m.username))];
+
+                container.innerHTML = usersWithMsgs.map(uname => {
+                    const userMsgs = messages.filter(m => m.username === uname);
+                    return `
+                        <div class="chat-admin-box">
+                            <h3 style="margin:0 0 10px 0; color:#38bdf8;">👤 Conversation avec : ${uname}</h3>
+                            <div style="max-height:150px; overflow-y:auto; background:#1e293b; padding:10px; border-radius:6px; margin-bottom:10px;">
+                                ${userMsgs.map(m => `
+                                    <div style="margin-bottom:5px; color:${m.fromAdmin ? '#4ade80' : '#f8fafc'};">
+                                        <strong>${m.senderName} :</strong> ${m.text} <small style="color:#64748b;">(${m.timestamp || ''})</small>
+                                    </div>
+                                `).join('')}
+                            </div>
+                            <div style="display:flex; gap:10px;">
+                                <input type="text" id="admin-reply-${uname}" class="reply-field" placeholder="Répondre à ${uname}...">
+                                <button onclick="replyToChat('${uname}')" class="btn-send">Envoyer la réponse</button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            window.replyToChat = function(targetUser) {
+                const input = document.getElementById(`admin-reply-${targetUser}`);
+                const text = input ? input.value.trim() : "";
+
+                if (!text) return;
+
+                let messages = JSON.parse(localStorage.getItem('chat_messages')) || [];
+                messages.push({
+                    id: Date.now(),
+                    username: targetUser,
+                    senderName: "Admin 🛠️",
+                    text: text,
+                    fromAdmin: true,
+                    timestamp: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+                });
+
+                localStorage.setItem('chat_messages', JSON.stringify(messages));
+                input.value = "";
+                renderAdminChat();
+            };
+
+            renderUsersAdmin();
+            renderAdminChat();
         });
     </script>
 </body>

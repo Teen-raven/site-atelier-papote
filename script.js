@@ -33,6 +33,10 @@ function getSubmissions() {
         return [];
     }
 }
+function getChatMessages() {
+    try { return JSON.parse(localStorage.getItem('chat_messages')) || []; } catch(e) { return []; }
+}
+function saveChatMessages(msgs) { localStorage.setItem('chat_messages', JSON.stringify(msgs)); }
 
 function saveSubmissions(submissions) {
     localStorage.setItem('form_submissions', JSON.stringify(submissions));
@@ -340,6 +344,101 @@ function renderCalendar() {
 }
 
 // ==========================================
+// 4. INJECTION DU TCHAT FLOTTANT (Bas à droite)
+// ==========================================
+function initFloatingChat() {
+    const user = JSON.parse(localStorage.getItem('user_session'));
+
+    // Injecter le HTML du widget tchat
+    const chatWidgetHTML = `
+        <style>
+            #floating-chat-btn { position: fixed; bottom: 20px; right: 20px; background: #0284c7; color: white; border: none; padding: 12px 18px; border-radius: 30px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 9999; font-size: 15px; }
+            #floating-chat-box { position: fixed; bottom: 75px; right: 20px; width: 320px; height: 400px; background: white; border-radius: 12px; box-shadow: 0 5px 25px rgba(0,0,0,0.25); display: none; flex-direction: column; z-index: 9999; border: 1px solid #cbd5e1; overflow: hidden; font-family: Arial, sans-serif; }
+            .chat-header { background: #0284c7; color: white; padding: 12px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
+            .chat-messages { flex: 1; padding: 10px; overflow-y: auto; background: #f8fafc; display: flex; flex-direction: column; gap: 8px; }
+            .msg-bubble { max-width: 80%; padding: 8px 12px; border-radius: 10px; font-size: 13px; line-height: 1.4; }
+            .msg-user { background: #0284c7; color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
+            .msg-admin { background: #e2e8f0; color: #0f172a; align-self: flex-start; border-bottom-left-radius: 2px; }
+            .chat-input-area { display: flex; padding: 8px; background: white; border-top: 1px solid #e2e8f0; }
+            .chat-input-area input { flex: 1; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; outline: none; }
+            .chat-input-area button { background: #16a34a; color: white; border: none; padding: 8px 12px; margin-left: 5px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        </style>
+
+        <button id="floating-chat-btn">💬 Chat Admin</button>
+        
+        <div id="floating-chat-box">
+            <div class="chat-header">
+                <span>💬 Discussion avec l'Admin</span>
+                <span id="close-chat" style="cursor:pointer; font-size:18px;">&times;</span>
+            </div>
+            <div class="chat-messages" id="chat-messages-container"></div>
+            <div class="chat-input-area">
+                <input type="text" id="chat-user-input" placeholder="Écrire un message...">
+                <button id="btn-send-chat">Envoyer</button>
+            </div>
+        </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', chatWidgetHTML);
+
+    const btnToggle = document.getElementById('floating-chat-btn');
+    const chatBox = document.getElementById('floating-chat-box');
+    const btnClose = document.getElementById('close-chat');
+    const container = document.getElementById('chat-messages-container');
+    const input = document.getElementById('chat-user-input');
+    const btnSend = document.getElementById('btn-send-chat');
+
+    // Toggle Ouvrir / Fermer
+    btnToggle.addEventListener('click', () => {
+        if (!user) {
+            alert("⚠️ Vous devez être connecté(e) pour utiliser le tchat !");
+            return;
+        }
+        chatBox.style.display = (chatBox.style.display === 'flex') ? 'none' : 'flex';
+        if (chatBox.style.display === 'flex') renderMessages();
+    });
+
+    btnClose.addEventListener('click', () => { chatBox.style.display = 'none'; });
+
+    function renderMessages() {
+        if (!user) return;
+        const allMsgs = getChatMessages();
+        // Filtrer les messages entre cet utilisateur et l'admin
+        const userMsgs = allMsgs.filter(m => m.username === user.username || (user.isAdmin && m.targetUser === user.username));
+
+        container.innerHTML = userMsgs.map(m => `
+            <div class="msg-bubble ${m.fromAdmin ? 'msg-admin' : 'msg-user'}">
+                <strong style="display:block; font-size:11px; opacity:0.8;">${m.senderName}</strong>
+                ${m.text}
+            </div>
+        `).join('');
+        container.scrollTop = container.scrollHeight;
+    }
+
+    btnSend.addEventListener('click', sendMessage);
+    input.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
+
+    function sendMessage() {
+        const text = input.value.trim();
+        if (!text || !user) return;
+
+        const allMsgs = getChatMessages();
+        allMsgs.push({
+            id: Date.now(),
+            username: user.username,
+            senderName: user.username,
+            text: text,
+            fromAdmin: user.isAdmin,
+            timestamp: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+        });
+
+        saveChatMessages(allMsgs);
+        input.value = '';
+        renderMessages();
+    }
+}
+
+// ==========================================
 // 6. INITIALISATION UNIQUE (Au chargement de la page)
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
@@ -347,6 +446,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateAuthUI();
     renderCalendar();
     createDots();
+	initFloatingChat();
 
     // Boutons navigation calendrier
     document.getElementById('prev-month')?.addEventListener('click', () => {
