@@ -1,5 +1,5 @@
 // ==========================================
-// 0. CONFIGURATION FIREBASE & INITIALISATION SÉCURISÉE
+// 0. INITIALISATION FIREBASE & SECOURISÉE
 // ==========================================
 const firebaseConfig = {
   apiKey: "AIzaSyDt0pDcCjKaRueh4O7gS9G6gzsKKyUdLnE",
@@ -13,23 +13,17 @@ const firebaseConfig = {
 };
 
 let db = null;
-
-// Initialisation sécurisée de Firebase pour éviter le crash du JS
 try {
     if (typeof firebase !== 'undefined') {
-        if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
-        }
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         db = firebase.database();
-    } else {
-        console.warn("⚠️ Firebase N'EST PAS chargé via les balises script dans le HTML.");
     }
-} catch (e) {
-    console.error("Erreur d'initialisation Firebase :", e);
+} catch(e) {
+    console.error("Firebase indisponible:", e);
 }
 
 // ==========================================
-// 1. BASE DE DONNÉES ÉVÉNEMENTS
+// 1. DONNÉES ÉVÉNEMENTS
 // ==========================================
 window.eventsData = window.eventsData || {
     "2026-08-03": {
@@ -42,40 +36,18 @@ window.eventsData = window.eventsData || {
 };
 
 // ==========================================
-// 2. INITIALISATION CARROUSEL & CALENDRIER
+// 2. GENERATION DU CALENDRIER
 // ==========================================
-function initCarousel() {
-    const track = document.querySelector('.carousel-track') || document.getElementById('carousel-track');
-    const prevBtn = document.querySelector('.carousel-btn.prev') || document.getElementById('prev-btn');
-    const nextBtn = document.querySelector('.carousel-btn.next') || document.getElementById('next-btn');
-
-    if (!track) return;
-
-    const cardWidth = 320;
-
-    if (nextBtn) {
-        nextBtn.onclick = () => {
-            track.scrollBy({ left: cardWidth, behavior: 'smooth' });
-        };
-    }
-
-    if (prevBtn) {
-        prevBtn.onclick = () => {
-            track.scrollBy({ left: -cardWidth, behavior: 'smooth' });
-        };
-    }
-}
-
 function renderCalendar() {
     const calendarGrid = document.getElementById('calendar-grid');
     if (!calendarGrid) return;
 
     const daysInMonth = 31;
-    const startDayOffset = 5; // Samedi pour le 1er août 2026
+    const startDayOffset = 5; // Samedi 1er Août 2026
     
     let html = '';
     for (let i = 0; i < startDayOffset; i++) {
-        html += `<div class="calendar-day empty"></div>`;
+        html += `<div class="calendar-day empty" style="min-height:40px;"></div>`;
     }
 
     for (let day = 1; day <= daysInMonth; day++) {
@@ -84,14 +56,14 @@ function renderCalendar() {
 
         if (hasEvent) {
             html += `
-                <div class="calendar-day event-day" style="cursor:pointer; background:#e0f2fe; border:2px solid #0284c7; border-radius:8px; padding:5px; text-align:center;" onclick="window.location.href='${hasEvent.link}'">
-                    <span class="day-number" style="font-weight:bold;">${day}</span>
-                    <div class="event-icon" style="font-size:18px; margin-top:2px;">${hasEvent.icon}</div>
+                <div class="calendar-day event-day" style="cursor:pointer; background:#e0f2fe; border:2px solid #0284c7; border-radius:8px; padding:6px; text-align:center; min-height:40px;" onclick="window.location.href='${hasEvent.link}'">
+                    <span class="day-number" style="font-weight:bold; color:#0369a1;">${day}</span>
+                    <div class="event-icon" style="font-size:16px;">${hasEvent.icon}</div>
                 </div>
             `;
         } else {
             html += `
-                <div class="calendar-day" style="padding:5px; text-align:center;">
+                <div class="calendar-day" style="padding:6px; text-align:center; border:1px solid #e2e8f0; border-radius:6px; min-height:40px;">
                     <span class="day-number">${day}</span>
                 </div>
             `;
@@ -101,47 +73,39 @@ function renderCalendar() {
 }
 
 // ==========================================
-// 3. AUTHENTIFICATION & UTILISATEURS
+// 3. GESTION POP-UP ET ONGLETS (Connexion/Inscription)
 // ==========================================
-function updateAuthUI() {
-    const user = JSON.parse(localStorage.getItem('user_session'));
-    const authStatus = document.getElementById('auth-status');
-    const authActions = document.getElementById('auth-actions');
-
-    if (user && authStatus && authActions) {
-        authStatus.innerHTML = `
-            <div style="display:flex; align-items:center; gap:10px;">
-                <img src="${user.avatar}" style="width:38px; height:38px; border-radius:50%; object-fit:cover; border:2px solid #0284c7;" onerror="this.src='https://api.dicebear.com/7.x/bottts/svg?seed=User'">
-                <span>Bienvenue, <strong>${user.username}</strong> ${user.isAdmin ? '(Admin 🛠️)' : ''}</span>
-            </div>
-        `;
-
-        let adminBtn = user.isAdmin ? `<a href="admin.html" class="btn-auth" style="background-color:#e11d48; color:white; text-decoration:none; padding:8px 12px; border-radius:5px; font-weight:bold; margin-right:5px;">Page Admin ➔</a>` : '';
-        let proposalBtn = `<a href="suggestions.html" class="btn-auth" style="background-color:#16a34a; color:white; text-decoration:none; padding:8px 12px; border-radius:5px; font-weight:bold; margin-right:5px;">💡 Mon Profil / Suggestions</a>`;
-
-        authActions.innerHTML = `
-            ${adminBtn}
-            ${proposalBtn}
-            <button id="btn-logout" class="btn-auth" style="background:#64748b; color:white; border:none; padding:8px 12px; border-radius:5px; cursor:pointer;">Déconnexion</button>
-        `;
-
-        document.getElementById('btn-logout')?.addEventListener('click', () => {
-            if (user.username && db) {
-                db.ref('presence/' + user.username.toLowerCase().replace(/\./g, '_')).remove();
-            }
-            localStorage.removeItem('user_session');
-            location.reload();
-        });
-    }
-}
-
 function setupAuth() {
     const regModal = document.getElementById('register-modal');
     const adminModal = document.getElementById('admin-modal');
 
+    const tabLogin = document.getElementById('tab-login');
+    const tabRegister = document.getElementById('tab-register');
+    const formLogin = document.getElementById('form-login');
+    const formRegister = document.getElementById('form-register');
+
+    // Bascule Onglets
+    if (tabLogin && tabRegister) {
+        tabLogin.addEventListener('click', () => {
+            tabLogin.classList.add('active');
+            tabRegister.classList.remove('active');
+            formLogin.style.display = 'block';
+            formRegister.style.display = 'none';
+        });
+
+        tabRegister.addEventListener('click', () => {
+            tabRegister.classList.add('active');
+            tabLogin.classList.remove('active');
+            formRegister.style.display = 'block';
+            formLogin.style.display = 'none';
+        });
+    }
+
+    // Ouverture des modales
     document.getElementById('btn-open-register')?.addEventListener('click', () => { if(regModal) regModal.style.display = 'flex'; });
     document.getElementById('btn-open-admin-login')?.addEventListener('click', () => { if(adminModal) adminModal.style.display = 'flex'; });
 
+    // Fermeture des modales
     document.querySelectorAll('.close-modal').forEach(btn => {
         btn.addEventListener('click', () => {
             if(regModal) regModal.style.display = 'none';
@@ -149,7 +113,7 @@ function setupAuth() {
         });
     });
 
-    // Inscription (Compte en ligne Firebase ou secours Local)
+    // Inscription
     document.getElementById('btn-submit-register')?.addEventListener('click', (e) => {
         e.preventDefault();
         const username = document.getElementById('reg-username')?.value.trim();
@@ -161,31 +125,21 @@ function setupAuth() {
             return;
         }
 
+        const userData = { username, password, avatar };
         const userKey = username.toLowerCase().replace(/\./g, '_');
-        const userData = { username, password, avatar, createdAt: new Date().toLocaleDateString('fr-FR') };
 
         if (db) {
-            const userRef = db.ref('users/' + userKey);
-            userRef.once('value', snapshot => {
+            db.ref('users/' + userKey).once('value', snapshot => {
                 if (snapshot.exists()) {
-                    alert("Ce pseudo est déjà utilisé. Choisissez-en un autre.");
+                    alert("Ce pseudo existe déjà !");
                 } else {
-                    userRef.set(userData).then(() => {
-                        const session = { username: userData.username, avatar: userData.avatar, isAdmin: false };
-                        localStorage.setItem('user_session', JSON.stringify(session));
-                        db.ref('presence/' + userKey).set(true);
+                    db.ref('users/' + userKey).set(userData).then(() => {
+                        localStorage.setItem('user_session', JSON.stringify({ username, avatar, isAdmin: false }));
                         alert("Compte créé avec succès !");
-                        if(regModal) regModal.style.display = 'none';
                         location.reload();
                     });
                 }
             });
-        } else {
-            // Mode secours au cas où Firebase ne charge pas
-            const session = { username: userData.username, avatar: userData.avatar, isAdmin: false };
-            localStorage.setItem('user_session', JSON.stringify(session));
-            alert("Compte créé en local !");
-            location.reload();
         }
     });
 
@@ -205,17 +159,12 @@ function setupAuth() {
             db.ref('users/' + userKey).once('value', snapshot => {
                 const userData = snapshot.val();
                 if (userData && userData.password === password) {
-                    const session = { username: userData.username, avatar: userData.avatar, isAdmin: false };
-                    localStorage.setItem('user_session', JSON.stringify(session));
-                    db.ref('presence/' + userKey).set(true);
-                    if(regModal) regModal.style.display = 'none';
+                    localStorage.setItem('user_session', JSON.stringify({ username: userData.username, avatar: userData.avatar, isAdmin: false }));
                     location.reload();
                 } else {
                     alert("Pseudo ou mot de passe incorrect.");
                 }
             });
-        } else {
-            alert("⚠️ La connexion au serveur échoue. Vérifiez votre connexion.");
         }
     });
 
@@ -224,10 +173,7 @@ function setupAuth() {
         e.preventDefault();
         const pass = document.getElementById('admin-pass')?.value.trim();
         if (pass === 'admin123') {
-            const session = { username: "Admin", avatar: "https://api.dicebear.com/7.x/bottts/svg?seed=Admin", isAdmin: true };
-            localStorage.setItem('user_session', JSON.stringify(session));
-            if(db) db.ref('presence/Admin').set(true);
-            if(adminModal) adminModal.style.display = 'none';
+            localStorage.setItem('user_session', JSON.stringify({ username: "Admin", avatar: "https://api.dicebear.com/7.x/bottts/svg?seed=Admin", isAdmin: true }));
             location.reload();
         } else {
             alert("Mot de passe admin incorrect.");
@@ -235,187 +181,31 @@ function setupAuth() {
     });
 }
 
-// ==========================================
-// 4. CHAT FLOTTANT TEMPS RÉEL
-// ==========================================
-function initFloatingChat() {
-    const chatWidgetHTML = `
-        <style>
-            #floating-chat-btn { position: fixed; bottom: 20px; right: 20px; background: #0284c7; color: white; border: none; padding: 12px 18px; border-radius: 30px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 9999; font-size: 15px; }
-            #floating-chat-box { position: fixed; bottom: 75px; right: 20px; width: 340px; height: 450px; background: white; border-radius: 12px; box-shadow: 0 5px 25px rgba(0,0,0,0.25); display: none; flex-direction: column; z-index: 9999; border: 1px solid #cbd5e1; overflow: hidden; font-family: Arial, sans-serif; }
-            .chat-header { background: #0284c7; color: white; padding: 10px 14px; font-weight: bold; display: flex; flex-direction: column; gap: 4px; }
-            .chat-header-top { display: flex; justify-content: space-between; align-items: center; }
-            .chat-messages { flex: 1; padding: 10px; overflow-y: auto; background: #f8fafc; display: flex; flex-direction: column; gap: 8px; }
-            .msg-bubble { max-width: 80%; padding: 8px 12px; border-radius: 10px; font-size: 13px; line-height: 1.4; word-break: break-word; }
-            .msg-bubble img { max-width: 100%; border-radius: 6px; margin-top: 4px; display: block; }
-            .msg-user { background: #0284c7; color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
-            .msg-admin { background: #e2e8f0; color: #0f172a; align-self: flex-start; border-bottom-left-radius: 2px; }
-            .emoji-bar { background: #f1f5f9; padding: 4px 8px; display: flex; gap: 6px; border-top: 1px solid #e2e8f0; }
-            .emoji-btn { background: none; border: none; font-size: 16px; cursor: pointer; }
-            .chat-input-area { display: flex; padding: 8px; background: white; border-top: 1px solid #e2e8f0; }
-            .chat-input-area input { flex: 1; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; outline: none; }
-            .chat-input-area button { background: #16a34a; color: white; border: none; padding: 8px 12px; margin-left: 5px; border-radius: 6px; cursor: pointer; font-weight: bold; }
-        </style>
+function updateAuthUI() {
+    const user = JSON.parse(localStorage.getItem('user_session'));
+    const authStatus = document.getElementById('auth-status');
+    const authActions = document.getElementById('auth-actions');
 
-        <button id="floating-chat-btn">💬 Chat Admin</button>
-        
-        <div id="floating-chat-box">
-            <div class="chat-header">
-                <div class="chat-header-top">
-                    <div>💬 Chat Support <span style="font-size:12px; color:#4ade80;">🟢 En ligne</span></div>
-                    <span id="close-chat" style="cursor:pointer; font-size:20px;">&times;</span>
-                </div>
-                <div id="admin-user-selector-container" style="display:none; margin-top: 4px;">
-                    <select id="admin-chat-user-select" style="width:100%; padding:4px; border-radius:4px; border:none; font-size:12px; font-weight:bold; background:#f1f5f9; color:#0f172a;">
-                        <option value="">-- Chargement des membres... --</option>
-                    </select>
-                </div>
+    if (user && authStatus && authActions) {
+        authStatus.innerHTML = `
+            <div style="display:flex; align-items:center; gap:10px;">
+                <img src="${user.avatar}" style="width:36px; height:36px; border-radius:50%; border:2px solid #38bdf8;">
+                <span>Bienvenue, <strong>${user.username}</strong> ${user.isAdmin ? '(Admin 🛠️)' : ''}</span>
             </div>
-            
-            <div class="chat-messages" id="chat-messages-container"></div>
-            
-            <div class="emoji-bar">
-                <button class="emoji-btn" onclick="addEmoji('😊')">😊</button>
-                <button class="emoji-btn" onclick="addEmoji('😂')">😂</button>
-                <button class="emoji-btn" onclick="addEmoji('❤️')">❤️</button>
-                <button class="emoji-btn" onclick="addEmoji('👍')">👍</button>
-                <button class="emoji-btn" onclick="addEmoji('🎉')">🎉</button>
-            </div>
-
-            <div class="chat-input-area">
-                <input type="text" id="chat-user-input" placeholder="Message ou lien GIF/image...">
-                <button id="btn-send-chat">Envoyer</button>
-            </div>
-        </div>
-    `;
-
-    document.body.insertAdjacentHTML('beforeend', chatWidgetHTML);
-
-    const btnToggle = document.getElementById('floating-chat-btn');
-    const chatBox = document.getElementById('floating-chat-box');
-    const btnClose = document.getElementById('close-chat');
-    const container = document.getElementById('chat-messages-container');
-    const input = document.getElementById('chat-user-input');
-    const btnSend = document.getElementById('btn-send-chat');
-    const userSelectContainer = document.getElementById('admin-user-selector-container');
-    const userSelect = document.getElementById('admin-chat-user-select');
-
-    let selectedUserForAdmin = "";
-
-    btnToggle.addEventListener('click', () => {
-        const currentSession = JSON.parse(localStorage.getItem('user_session'));
-        if (!currentSession) {
-            alert("⚠️ Vous devez être connecté(e) pour utiliser le tchat !");
-            return;
-        }
-
-        chatBox.style.display = (chatBox.style.display === 'flex') ? 'none' : 'flex';
-        
-        if (chatBox.style.display === 'flex') {
-            if (currentSession.isAdmin) {
-                userSelectContainer.style.display = 'block';
-                loadAdminUserList();
-            } else {
-                userSelectContainer.style.display = 'none';
-                listenToMessages(currentSession.username);
-            }
-        }
-    });
-
-    btnClose.addEventListener('click', () => { chatBox.style.display = 'none'; });
-
-    window.addEmoji = function(emoji) { if (input) input.value += emoji; };
-
-    function loadAdminUserList() {
-        if (!db) return;
-        db.ref('users').on('value', snapshot => {
-            const users = snapshot.val() || {};
-            const usernames = Object.values(users).map(u => u.username).filter(u => u !== 'Admin');
-            
-            if (usernames.length === 0) {
-                userSelect.innerHTML = '<option value="">-- Aucun membre inscrit --</option>';
-                return;
-            }
-
-            userSelect.innerHTML = '<option value="">-- Choisir une discussion --</option>' + 
-                usernames.map(u => `<option value="${u}">👤 Chat avec ${u}</option>`).join('');
-
-            if (!selectedUserForAdmin && usernames.length > 0) {
-                selectedUserForAdmin = usernames[0];
-                userSelect.value = selectedUserForAdmin;
-            }
-            if (selectedUserForAdmin) listenToMessages(selectedUserForAdmin);
-        });
-    }
-
-    userSelect.addEventListener('change', (e) => {
-        selectedUserForAdmin = e.target.value;
-        if (selectedUserForAdmin) listenToMessages(selectedUserForAdmin);
-    });
-
-    function listenToMessages(targetUser) {
-        if (!db) return;
-        db.ref('chats/' + targetUser.toLowerCase().replace(/\./g, '_')).on('value', snapshot => {
-            const currentSession = JSON.parse(localStorage.getItem('user_session'));
-            const msgs = snapshot.val() || {};
-            const msgList = Object.values(msgs);
-
-            if (msgList.length === 0) {
-                container.innerHTML = `<p style="text-align:center; color:#94a3b8; font-size:12px; margin-top:20px;">Aucun message avec ${targetUser}.</p>`;
-                return;
-            }
-
-            container.innerHTML = msgList.map(m => {
-                const isImage = m.text.match(/\.(jpeg|jpg|gif|png|webp)$/i) || m.text.includes('giphy.com') || m.text.includes('tenor.com');
-                const content = isImage ? `<img src="${m.text}" alt="GIF">` : m.text;
-                const isMe = (currentSession.isAdmin && m.fromAdmin) || (!currentSession.isAdmin && !m.fromAdmin);
-
-                return `
-                    <div class="msg-bubble ${isMe ? 'msg-user' : 'msg-admin'}">
-                        <strong style="display:block; font-size:11px; opacity:0.8;">${m.senderName}</strong>
-                        ${content}
-                    </div>
-                `;
-            }).join('');
-            container.scrollTop = container.scrollHeight;
-        });
-    }
-
-    btnSend.addEventListener('click', sendMessage);
-    input.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
-
-    function sendMessage() {
-        const currentSession = JSON.parse(localStorage.getItem('user_session'));
-        const text = input.value.trim();
-        if (!text || !currentSession || !db) return;
-
-        const target = currentSession.isAdmin ? selectedUserForAdmin : currentSession.username;
-        if (!target) {
-            alert("⚠️ Sélectionnez d'abord un utilisateur dans le menu déroulant !");
-            return;
-        }
-
-        const msgData = {
-            senderName: currentSession.username,
-            text: text,
-            fromAdmin: currentSession.isAdmin,
-            timestamp: Date.now()
-        };
-
-        db.ref('chats/' + target.toLowerCase().replace(/\./g, '_')).push(msgData).then(() => {
-            input.value = '';
+        `;
+        authActions.innerHTML = `<button id="btn-logout" class="btn-auth" style="background:#64748b;">Déconnexion</button>`;
+        document.getElementById('btn-logout')?.addEventListener('click', () => {
+            localStorage.removeItem('user_session');
+            location.reload();
         });
     }
 }
 
 // ==========================================
-// 5. INITIALISATION DE LA PAGE
+// INITIALISATION AU CHARGEMENT
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
-    initCarousel();
     renderCalendar();
     setupAuth();
     updateAuthUI();
-    initFloatingChat();
 });
-
