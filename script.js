@@ -483,6 +483,100 @@ function initFloatingChat() {
         renderMessages();
     }
 }
+// ==========================================
+// 8. LOGIQUE SPÉCIFIQUE À L'ATELIER DU 3 AOÛT
+// ==========================================
+const WORKSHOP_3AOUT_ID = "2026-08-03";
+
+// Fonction d'affichage des propositions sur 3aout.html
+function renderProposals3Aout() {
+    const proposalsList = document.getElementById('proposals-list');
+    if (!proposalsList) return; // Si on n'est pas sur 3aout.html, on stoppe sans erreur
+
+    const proposals = JSON.parse(localStorage.getItem('workshop_proposals')) || [];
+    const workshopProposals = proposals.filter(p => p.workshopId === WORKSHOP_3AOUT_ID || p.workshopName?.includes('3 Août'));
+
+    if (workshopProposals.length === 0) {
+        proposalsList.innerHTML = "<p style='color:#64748b;'>Aucune proposition pour le moment. Soyez le premier !</p>";
+        return;
+    }
+
+    proposalsList.innerHTML = workshopProposals.map(p => `
+        <div class="proposal-card">
+            <div class="proposal-header">
+                <span>👤 ${p.userName}</span>
+                <span>🕒 ${p.date || p.submittedAt || ''}</span>
+            </div>
+            <p style="margin: 5px 0; color:#0f172a;">${p.message}</p>
+            ${p.reply ? `
+                <div class="admin-reply-box">
+                    <strong>🛠️ Réponse de l'Admin :</strong>
+                    <p style="margin:3px 0 0 0;">${p.reply}</p>
+                </div>
+            ` : `<small style="color:#f59e0b; font-weight:bold;">⌛ En attente de réponse de l'admin</small>`}
+        </div>
+    `).join('');
+}
+
+// Initialisation des écouteurs de la page 3aout.html
+function init3AoutPage() {
+    const proposalForm = document.getElementById('proposal-form');
+    const proposalInput = document.getElementById('proposal-text');
+
+    // Affichage initial des propositions
+    renderProposals3Aout();
+
+    // Envoi d'une nouvelle proposition
+    if (proposalForm && proposalInput) {
+        proposalForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const session = JSON.parse(localStorage.getItem('user_session'));
+
+            if (!session) {
+                alert("⚠️ Vous devez être connecté(e) pour faire une proposition !");
+                const regModal = document.getElementById('register-modal');
+                if (regModal) regModal.style.display = 'flex';
+                return;
+            }
+
+            const messageText = proposalInput.value.trim();
+            if (!messageText) return;
+
+            const newProposal = {
+                id: Date.now(),
+                workshopId: WORKSHOP_3AOUT_ID,
+                workshopName: "3 Août - Film, Débat & Just Dance",
+                userName: session.username,
+                userAvatar: session.avatar,
+                message: messageText,
+                reply: null,
+                date: new Date().toLocaleString('fr-FR'),
+                submittedAt: new Date().toLocaleString('fr-FR')
+            };
+
+            let proposals = JSON.parse(localStorage.getItem('workshop_proposals')) || [];
+            proposals.push(newProposal);
+            localStorage.setItem('workshop_proposals', JSON.stringify(proposals));
+
+            proposalInput.value = "";
+            renderProposals3Aout();
+        });
+    }
+}
+
+
+
+document.addEventListener('DOMContentLoaded', () => {
+    // tes fonctions existantes...
+    setupAuth();
+    updateAuthUI();
+    renderCalendar();
+    createDots();
+    initFloatingChat();
+
+    // ➔ AJOUT DE CETTE LIGNE :
+    init3AoutPage();
+});
 
 // ==========================================
 // 7. INITIALISATION UNIQUE AU CHARGEMENT
