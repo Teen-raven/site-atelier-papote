@@ -95,7 +95,7 @@
                 <span>Bienvenue sur Atelier Papote !</span>
             </div>
             <div class="auth-buttons" id="auth-actions">
-                <button id="btn-open-register" class="btn-auth">Créer un compte</button>
+                <button id="btn-open-register" class="btn-auth">Espace Membre / Compte</button>
                 <button id="btn-open-admin-login" class="btn-auth btn-admin">Connexion Admin 🛠️</button>
             </div>
         </div>
@@ -168,29 +168,48 @@
 
     <div id="register-modal" class="modal">
         <div class="modal-content">
-            <span class="close-modal" class="close-register">&times;</span>
-            <h3>Créer un compte</h3>
+            <span class="close-modal">&times;</span>
             
-            <div class="form-group">
-                <label for="reg-username">Votre Pseudo / Surnom :</label>
-                <input type="text" id="reg-username" placeholder="Ex: Alex" required>
+            <div style="display: flex; gap: 10px; margin-bottom: 15px; border-bottom: 2px solid #e2e8f0; cursor: pointer;">
+                <div id="tab-login" style="padding: 8px; font-weight: bold; border-bottom: 3px solid #0284c7;">Connexion</div>
+                <div id="tab-register" style="padding: 8px; font-weight: bold; color: #64748b;">Créer un compte</div>
             </div>
 
-            <div class="form-group">
-                <label for="reg-avatar">Lien vers votre photo/avatar (URL) :</label>
-                <input type="text" id="reg-avatar" placeholder="https://.../photo.jpg">
-                <small style="color: #666; display: block; margin-top: 4px;">Si laissé vide, une image sera créée automatiquement !</small>
-            </div>
+            <form id="form-login">
+                <div class="form-group">
+                    <label for="login-username">Votre Pseudo :</label>
+                    <input type="text" id="login-username" placeholder="Ex: Alex" required>
+                </div>
+                <div class="form-group">
+                    <label for="login-password">Mot de passe :</label>
+                    <input type="password" id="login-password" required>
+                </div>
+                <button id="btn-submit-login" class="btn-submit" style="width: 100%; margin-top: 10px;">Se connecter</button>
+            </form>
 
-            <img id="avatar-preview-img" class="avatar-preview" src="https://api.dicebear.com/7.x/bottts/svg?seed=Papote" alt="Aperçu Avatar">
-
-            <button id="btn-submit-register" class="btn-submit" style="width: 100%; margin-top: 10px;">Enregistrer mon compte</button>
+            <form id="form-register" style="display: none;">
+                <div class="form-group">
+                    <label for="reg-username">Votre Pseudo / Surnom :</label>
+                    <input type="text" id="reg-username" placeholder="Ex: Alex" required>
+                </div>
+                <div class="form-group">
+                    <label for="reg-password">Mot de passe :</label>
+                    <input type="password" id="reg-password" required>
+                </div>
+                <div class="form-group">
+                    <label for="reg-avatar">Lien vers votre photo/avatar (URL) :</label>
+                    <input type="text" id="reg-avatar" placeholder="https://.../photo.jpg">
+                    <small style="color: #666; display: block; margin-top: 4px;">Si laissé vide, un avatar sera créé automatiquement !</small>
+                </div>
+                <img id="avatar-preview-img" class="avatar-preview" src="https://api.dicebear.com/7.x/bottts/svg?seed=Papote" alt="Aperçu Avatar">
+                <button id="btn-submit-register" class="btn-submit" style="width: 100%; margin-top: 10px; background-color: #16a34a;">Créer mon compte</button>
+            </form>
         </div>
     </div>
 
     <div id="admin-modal" class="modal">
         <div class="modal-content">
-            <span class="close-modal" class="close-admin">&times;</span>
+            <span class="close-modal">&times;</span>
             <h3 style="color: #e11d48;">Connexion Administrateur</h3>
             
             <div class="form-group">
@@ -203,6 +222,6 @@
         </div>
     </div>
 
-    <script src="script.js"></script>
+    <script type="module" src="script.js"></script>
 </body>
 </html>
