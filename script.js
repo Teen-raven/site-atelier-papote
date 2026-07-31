@@ -12,9 +12,10 @@ const firebaseConfig = {
     measurementId: "G-PL3ZE3X8TJ"
 };
 
-// Initialisation de Firebase sans les imports
+// Initialisation de Firebase sans imports
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
+
 // ==========================================
 // 1. BASE DE DONNÉES ÉVÉNEMENTS
 // ==========================================
@@ -341,10 +342,24 @@ function renderCalendar() {
 }
 
 // ==========================================
-// 6. INJECTION DU TCHAT FLOTTANT (Firebase Direct)
+// 6. INJECTION DU TCHAT FLOTTANT (Firebase Compat)
 // ==========================================
+window.addEmoji = function(emoji) {
+    const input = document.getElementById('chat-user-input');
+    if (input) input.value += emoji;
+};
+
+window.sendGifPrompt = function() {
+    const input = document.getElementById('chat-user-input');
+    const gifUrl = prompt("Collez le lien URL de votre GIF (ex: https://media.giphy.com/...):");
+    if (gifUrl && input) {
+        input.value = gifUrl;
+        const btnSend = document.getElementById('btn-send-chat');
+        if (btnSend) btnSend.click();
+    }
+};
+
 function initFloatingChat() {
-    const user = JSON.parse(localStorage.getItem('user_session'));
     const isAdminOnline = localStorage.getItem('admin_online') === 'true';
 
     const statusBadge = isAdminOnline 
@@ -409,8 +424,6 @@ function initFloatingChat() {
     const input = document.getElementById('chat-user-input');
     const btnSend = document.getElementById('btn-send-chat');
 
-    const chatRef = ref(db, 'chat_messages');
-
     btnToggle.addEventListener('click', () => {
         const currentSession = JSON.parse(localStorage.getItem('user_session'));
         if (!currentSession) {
@@ -422,20 +435,8 @@ function initFloatingChat() {
 
     btnClose.addEventListener('click', () => { chatBox.style.display = 'none'; });
 
-    window.addEmoji = function(emoji) {
-        if (input) input.value += emoji;
-    };
-
-    window.sendGifPrompt = function() {
-        const gifUrl = prompt("Collez le lien URL de votre GIF (ex: https://media.giphy.com/...):");
-        if (gifUrl && input) {
-            input.value = gifUrl;
-            sendMessage();
-        }
-    };
-
-    // Écoute des messages en temps réel depuis Firebase
-    onValue(chatRef, (snapshot) => {
+    // Écoute des messages Firebase Realtime
+    db.ref('chat_messages').on('value', (snapshot) => {
         const currentSession = JSON.parse(localStorage.getItem('user_session'));
         if (!currentSession) return;
 
@@ -477,7 +478,7 @@ function initFloatingChat() {
             timestamp: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
         };
 
-        push(chatRef, newMessage).then(() => {
+        db.ref('chat_messages').push(newMessage).then(() => {
             input.value = '';
         });
     }
