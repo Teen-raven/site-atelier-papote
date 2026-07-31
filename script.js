@@ -12,7 +12,6 @@ const firebaseConfig = {
     measurementId: "G-PL3ZE3X8TJ"
 };
 
-// Initialisation de Firebase sans imports
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
