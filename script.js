@@ -340,18 +340,19 @@ function renderCalendar() {
 // ==========================================
 function initFloatingChat() {
     const user = JSON.parse(localStorage.getItem('user_session'));
-    const isAdminOnline = localStorage.getItem('admin_online') === 'true';
 
-    // Badge de statut (En ligne / Hors ligne)
-    const statusBadge = isAdminOnline 
-        ? `<span style="color: #4ade80; font-size: 12px;">🟢 En ligne</span>`
-        : `<span style="color: #94a3b8; font-size: 12px;">⚪ Hors ligne</span>`;
+    // 🟢 STATUT EN LIGNE : Si une session existe, on est En Ligne
+    const isOnline = !!user;
+    const statusBadge = isOnline 
+        ? `<span style="color: #4ade80; font-size: 12px; font-weight: normal;">🟢 En ligne</span>`
+        : `<span style="color: #94a3b8; font-size: 12px; font-weight: normal;">⚪ Hors ligne</span>`;
 
     const chatWidgetHTML = `
         <style>
             #floating-chat-btn { position: fixed; bottom: 20px; right: 20px; background: #0284c7; color: white; border: none; padding: 12px 18px; border-radius: 30px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 9999; font-size: 15px; }
-            #floating-chat-box { position: fixed; bottom: 75px; right: 20px; width: 330px; height: 430px; background: white; border-radius: 12px; box-shadow: 0 5px 25px rgba(0,0,0,0.25); display: none; flex-direction: column; z-index: 9999; border: 1px solid #cbd5e1; overflow: hidden; font-family: Arial, sans-serif; }
-            .chat-header { background: #0284c7; color: white; padding: 10px 14px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
+            #floating-chat-box { position: fixed; bottom: 75px; right: 20px; width: 340px; height: 450px; background: white; border-radius: 12px; box-shadow: 0 5px 25px rgba(0,0,0,0.25); display: none; flex-direction: column; z-index: 9999; border: 1px solid #cbd5e1; overflow: hidden; font-family: Arial, sans-serif; }
+            .chat-header { background: #0284c7; color: white; padding: 10px 14px; font-weight: bold; display: flex; flex-direction: column; gap: 4px; }
+            .chat-header-top { display: flex; justify-content: space-between; align-items: center; }
             .chat-messages { flex: 1; padding: 10px; overflow-y: auto; background: #f8fafc; display: flex; flex-direction: column; gap: 8px; }
             .msg-bubble { max-width: 80%; padding: 8px 12px; border-radius: 10px; font-size: 13px; line-height: 1.4; word-break: break-word; }
             .msg-bubble img { max-width: 100%; border-radius: 6px; margin-top: 4px; display: block; }
@@ -371,11 +372,15 @@ function initFloatingChat() {
         
         <div id="floating-chat-box">
             <div class="chat-header">
-                <div>
-                    <div>💬 Chat Admin</div>
-                    <div>${statusBadge}</div>
+                <div class="chat-header-top">
+                    <div>💬 Chat Support ${statusBadge}</div>
+                    <span id="close-chat" style="cursor:pointer; font-size:20px;">&times;</span>
                 </div>
-                <span id="close-chat" style="cursor:pointer; font-size:20px;">&times;</span>
+                <div id="admin-user-selector-container" style="display:none; margin-top: 4px;">
+                    <select id="admin-chat-user-select" style="width:100%; padding:4px; border-radius:4px; border:none; font-size:12px;">
+                        <option value="">-- Choisir une discussion utilisateur --</option>
+                    </select>
+                </div>
             </div>
             
             <div class="chat-messages" id="chat-messages-container"></div>
@@ -404,6 +409,10 @@ function initFloatingChat() {
     const container = document.getElementById('chat-messages-container');
     const input = document.getElementById('chat-user-input');
     const btnSend = document.getElementById('btn-send-chat');
+    const userSelectContainer = document.getElementById('admin-user-selector-container');
+    const userSelect = document.getElementById('admin-chat-user-select');
+
+    let selectedUserForAdmin = "";
 
     btnToggle.addEventListener('click', () => {
         const currentSession = JSON.parse(localStorage.getItem('user_session'));
@@ -411,8 +420,18 @@ function initFloatingChat() {
             alert("⚠️ Vous devez être connecté(e) pour utiliser le tchat !");
             return;
         }
+
         chatBox.style.display = (chatBox.style.display === 'flex') ? 'none' : 'flex';
-        if (chatBox.style.display === 'flex') renderMessages();
+        
+        if (chatBox.style.display === 'flex') {
+            if (currentSession.isAdmin) {
+                userSelectContainer.style.display = 'block';
+                populateUserDropdown();
+            } else {
+                userSelectContainer.style.display = 'none';
+            }
+            renderMessages();
+        }
     });
 
     btnClose.addEventListener('click', () => { chatBox.style.display = 'none'; });
@@ -429,21 +448,53 @@ function initFloatingChat() {
         }
     };
 
+    // Remplit la liste déroulante de l'Admin avec les membres ayant envoyé un message (ex: Poppy)
+    function populateUserDropdown() {
+        const allMsgs = getChatMessages();
+        const usersWithChat = [...new Set(allMsgs.map(m => m.username))].filter(u => u !== 'Admin');
+        
+        userSelect.innerHTML = '<option value="">-- Choisir une discussion --</option>' + 
+            usersWithChat.map(u => `<option value="${u}">${u}</option>`).join('');
+
+        if (selectedUserForAdmin) {
+            userSelect.value = selectedUserForAdmin;
+        }
+    }
+
+    userSelect.addEventListener('change', (e) => {
+        selectedUserForAdmin = e.target.value;
+        renderMessages();
+    });
+
     function renderMessages() {
         const currentSession = JSON.parse(localStorage.getItem('user_session'));
         if (!currentSession) return;
         const allMsgs = getChatMessages();
         
-        const userMsgs = currentSession.isAdmin 
-            ? allMsgs 
-            : allMsgs.filter(m => m.username === currentSession.username);
+        let filteredMsgs = [];
 
-        container.innerHTML = userMsgs.map(m => {
+        if (currentSession.isAdmin) {
+            // Si l'admin a sélectionné un utilisateur (ex: Poppy)
+            if (selectedUserForAdmin) {
+                filteredMsgs = allMsgs.filter(m => m.username === selectedUserForAdmin || (m.fromAdmin && m.targetUser === selectedUserForAdmin));
+            } else {
+                container.innerHTML = `<p style="text-align:center; color:#64748b; font-size:12px; margin-top:20px;">Veuillez sélectionner un utilisateur en haut pour voir la discussion.</p>`;
+                return;
+            }
+        } else {
+            // Un utilisateur normal ne voit QUE ses propres échanges avec l'admin
+            filteredMsgs = allMsgs.filter(m => m.username === currentSession.username || (m.fromAdmin && m.targetUser === currentSession.username));
+        }
+
+        container.innerHTML = filteredMsgs.map(m => {
             const isImage = m.text.match(/\.(jpeg|jpg|gif|png|webp)$/i) || m.text.includes('giphy.com') || m.text.includes('tenor.com');
             const content = isImage ? `<img src="${m.text}" alt="GIF">` : m.text;
 
+            // Déterminer la bulle à droite ou à gauche selon qui regarde
+            const isMe = (currentSession.isAdmin && m.fromAdmin) || (!currentSession.isAdmin && !m.fromAdmin);
+
             return `
-                <div class="msg-bubble ${m.fromAdmin ? 'msg-admin' : 'msg-user'}">
+                <div class="msg-bubble ${isMe ? 'msg-user' : 'msg-admin'}">
                     <strong style="display:block; font-size:11px; opacity:0.8;">${m.senderName}</strong>
                     ${content}
                 </div>
@@ -460,10 +511,16 @@ function initFloatingChat() {
         const text = input.value.trim();
         if (!text || !currentSession) return;
 
+        if (currentSession.isAdmin && !selectedUserForAdmin) {
+            alert("⚠️ Sélectionnez un utilisateur dans le menu déroulant avant d'envoyer un message !");
+            return;
+        }
+
         const allMsgs = getChatMessages();
         allMsgs.push({
             id: Date.now(),
-            username: currentSession.username,
+            username: currentSession.isAdmin ? selectedUserForAdmin : currentSession.username,
+            targetUser: currentSession.isAdmin ? selectedUserForAdmin : currentSession.username,
             senderName: currentSession.username,
             text: text,
             fromAdmin: currentSession.isAdmin,
@@ -475,6 +532,7 @@ function initFloatingChat() {
         renderMessages();
     }
 }
+
 
 // ==========================================
 // 7. LOGIQUE SPÉCIFIQUE À L'ATELIER DU 3 AOÛT
