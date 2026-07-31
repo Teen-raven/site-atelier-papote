@@ -659,5 +659,14 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             workshopForm.reset();
         });
+		const firebaseConfig = {
+  apiKey: "AIzaSyDt0pDcCjKaRueh4O7gS9G6gzsKKyUdLnE",
+  authDomain: "atelier-papote.firebaseapp.com",
+  projectId: "atelier-papote",
+  storageBucket: "atelier-papote.firebasestorage.app",
+  messagingSenderId: "1013068157356",
+  appId: "1:1013068157356:web:67166cde4ea7a0748e2a09",
+  measurementId: "G-PL3ZE3X8TJ"
+};
     }
 });
