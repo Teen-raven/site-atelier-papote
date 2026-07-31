@@ -2,24 +2,31 @@
 // 0. CONFIGURATION FIREBASE (Base de données en ligne)
 // ==========================================
 // ⚠️ REMPLACE CES INFORMATIONS PAR CELLES DE TA CONSOLE FIREBASE ⚠️
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-    apiKey: "VOTRE_API_KEY",
-    authDomain: "votre-projet.firebaseapp.com",
-    databaseURL: "https://votre-projet-default-rtdb.europe-west1.firebasedatabase.app",
-    projectId: "votre-projet",
-    storageBucket: "votre-projet.appspot.com",
-    messagingSenderId: "123456789",
-    appId: "1:123456789:web:abcdef"
+  apiKey: "AIzaSyDt0pDcCjKaRueh4O7gS9G6gzsKKyUdLnE",
+  authDomain: "atelier-papote.firebaseapp.com",
+  databaseURL: "https://atelier-papote-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "atelier-papote",
+  storageBucket: "atelier-papote.firebasestorage.app",
+  messagingSenderId: "1013068157356",
+  appId: "1:1013068157356:web:67166cde4ea7a0748e2a09",
+  measurementId: "G-PL3ZE3X8TJ"
 };
 
-// Initialisation de Firebase
-if (!firebase.apps.length) {
-    firebase.initializeApp(firebaseConfig);
-}
-const db = firebase.database();
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
 
 // ==========================================
-// 1. BASE DE DONNÉES ÉVÉNEMENTS & CARROUSEL
+// 1. BASE DE DONNÉES ÉVÉNEMENTS
 // ==========================================
 window.eventsData = window.eventsData || {
     "2026-08-03": {
@@ -31,15 +38,17 @@ window.eventsData = window.eventsData || {
     }
 };
 
+// ==========================================
+// 2. INITIALISATION CARROUSEL & CALENDRIER
+// ==========================================
 function initCarousel() {
     const track = document.querySelector('.carousel-track') || document.getElementById('carousel-track');
     const prevBtn = document.querySelector('.carousel-btn.prev') || document.getElementById('prev-btn');
     const nextBtn = document.querySelector('.carousel-btn.next') || document.getElementById('next-btn');
 
-    if (!track) return; // Si pas de carrousel sur la page actuelle, on sort proprement
+    if (!track) return;
 
-    let scrollAmount = 0;
-    const cardWidth = 320; // Largeur estimée d'une carte + margin
+    const cardWidth = 320;
 
     if (nextBtn) {
         nextBtn.addEventListener('click', () => {
@@ -54,8 +63,43 @@ function initCarousel() {
     }
 }
 
+function renderCalendar() {
+    const calendarGrid = document.getElementById('calendar-grid');
+    if (!calendarGrid) return;
+
+    // Affiche le mois d'août 2026
+    const daysInMonth = 31;
+    const startDayOffset = 5; // Samedi pour le 1er août 2026
+    
+    let html = '';
+    for (let i = 0; i < startDayOffset; i++) {
+        html += `<div class="calendar-day empty"></div>`;
+    }
+
+    for (let day = 1; day <= daysInMonth; day++) {
+        const dateStr = `2026-08-${day < 10 ? '0' + day : day}`;
+        const hasEvent = window.eventsData[dateStr];
+
+        if (hasEvent) {
+            html += `
+                <div class="calendar-day event-day" onclick="window.location.href='${hasEvent.link}'">
+                    <span class="day-number">${day}</span>
+                    <span class="event-icon">${hasEvent.icon}</span>
+                </div>
+            `;
+        } else {
+            html += `
+                <div class="calendar-day">
+                    <span class="day-number">${day}</span>
+                </div>
+            `;
+        }
+    }
+    calendarGrid.innerHTML = html;
+}
+
 // ==========================================
-// 2. GESTION DU PROFIL & DE L'AUTHENTIFICATION
+// 3. AUTHENTIFICATION & UTILISATEURS EN LIGNE
 // ==========================================
 function updateAuthUI() {
     const user = JSON.parse(localStorage.getItem('user_session'));
@@ -103,7 +147,7 @@ function setupAuth() {
         });
     });
 
-    // --- INSCRIPTION EN LIGNE ---
+    // Inscription
     document.getElementById('btn-submit-register')?.addEventListener('click', (e) => {
         e.preventDefault();
         const username = document.getElementById('reg-username')?.value.trim();
@@ -135,7 +179,7 @@ function setupAuth() {
         });
     });
 
-    // --- CONNEXION MEMBRE ---
+    // Connexion Membre
     document.getElementById('btn-submit-login')?.addEventListener('click', (e) => {
         e.preventDefault();
         const username = document.getElementById('login-username')?.value.trim();
@@ -161,7 +205,7 @@ function setupAuth() {
         });
     });
 
-    // --- CONNEXION ADMIN ---
+    // Connexion Admin
     document.getElementById('btn-submit-admin')?.addEventListener('click', (e) => {
         e.preventDefault();
         const pass = document.getElementById('admin-pass')?.value.trim();
@@ -178,7 +222,7 @@ function setupAuth() {
 }
 
 // ==========================================
-// 3. CHAT FLOTTANT TEMPS RÉEL (Multi-Discussions)
+// 4. CHAT FLOTTANT TEMPS RÉEL (Firebase)
 // ==========================================
 function initFloatingChat() {
     const chatWidgetHTML = `
@@ -273,6 +317,11 @@ function initFloatingChat() {
             const users = snapshot.val() || {};
             const usernames = Object.values(users).map(u => u.username).filter(u => u !== 'Admin');
             
+            if (usernames.length === 0) {
+                userSelect.innerHTML = '<option value="">-- Aucun membre inscrit --</option>';
+                return;
+            }
+
             userSelect.innerHTML = '<option value="">-- Choisir une discussion --</option>' + 
                 usernames.map(u => `<option value="${u}">👤 Chat avec ${u}</option>`).join('');
 
@@ -344,11 +393,45 @@ function initFloatingChat() {
 }
 
 // ==========================================
-// 4. INITIALISATION DE LA PAGE
+// 5. GESTION DES PROPOSITIONS & REPAS (Firebase)
+// ==========================================
+function initSuggestionsAndMeals() {
+    // Formulaire de suggestion de repas / activités
+    const formMeal = document.getElementById('form-add-meal');
+    if (formMeal) {
+        formMeal.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const session = JSON.parse(localStorage.getItem('user_session'));
+            if (!session) { alert("Connectez-vous pour proposer un plat !"); return; }
+
+            const title = document.getElementById('meal-title')?.value.trim();
+            const category = document.getElementById('meal-category')?.value || 'plat';
+
+            if (title) {
+                db.ref('meals').push({
+                    title,
+                    category,
+                    author: session.username,
+                    likes: 0
+                }).then(() => {
+                    alert("Proposition envoyée !");
+                    formMeal.reset();
+                });
+            }
+        });
+    }
+}
+
+// ==========================================
+// 6. INITIALISATION TOTALE
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
     initCarousel();
+    renderCalendar();
     setupAuth();
     updateAuthUI();
     initFloatingChat();
+    initSuggestionsAndMeals();
 });
+
+
