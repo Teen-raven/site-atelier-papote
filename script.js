@@ -1,4 +1,24 @@
 // ==========================================
+// 0. INITIALISATION FIREBASE
+// ==========================================
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+const firebaseConfig = {
+    apiKey: "AIzaSyDt0pDcCjKaRueh4O7gS9G6gzsKKyUdLnE",
+    authDomain: "atelier-papote.firebaseapp.com",
+    databaseURL: "https://atelier-papote-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "atelier-papote",
+    storageBucket: "atelier-papote.firebasestorage.app",
+    messagingSenderId: "1013068157356",
+    appId: "1:1013068157356:web:67166cde4ea7a0748e2a09",
+    measurementId: "G-PL3ZE3X8TJ"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+// ==========================================
 // 1. BASE DE DONNÉES ÉVÉNEMENTS
 // ==========================================
 window.eventsData = window.eventsData || {
@@ -23,11 +43,6 @@ function getSubmissions() {
     try { return JSON.parse(localStorage.getItem('form_submissions')) || []; } catch(e) { return []; }
 }
 function saveSubmissions(submissions) { localStorage.setItem('form_submissions', JSON.stringify(submissions)); }
-
-function getChatMessages() {
-    try { return JSON.parse(localStorage.getItem('chat_messages')) || []; } catch(e) { return []; }
-}
-function saveChatMessages(msgs) { localStorage.setItem('chat_messages', JSON.stringify(msgs)); }
 
 // ==========================================
 // 3. AUTHENTIFICATION & INTERFACE UTILISATEUR
@@ -69,7 +84,6 @@ function setupAuth() {
     const regModal = document.getElementById('register-modal');
     const adminModal = document.getElementById('admin-modal');
 
-    // Ouverture des modales
     document.getElementById('btn-open-register')?.addEventListener('click', () => { 
         if(regModal) regModal.style.display = 'flex'; 
     });
@@ -78,7 +92,6 @@ function setupAuth() {
         if(adminModal) adminModal.style.display = 'flex'; 
     });
 
-    // Fermeture des modales
     document.querySelectorAll('.close-modal').forEach(btn => {
         btn.addEventListener('click', () => {
             if(regModal) regModal.style.display = 'none';
@@ -86,7 +99,6 @@ function setupAuth() {
         });
     });
 
-    // Onglets (Connexion / Inscription)
     const tabLogin = document.getElementById('tab-login');
     const tabRegister = document.getElementById('tab-register');
     const formLogin = document.getElementById('form-login');
@@ -108,7 +120,6 @@ function setupAuth() {
         });
     }
 
-    // Prévisualisation de l'avatar
     const regUsername = document.getElementById('reg-username');
     const regAvatar = document.getElementById('reg-avatar');
     const avatarPreviewImg = document.getElementById('avatar-preview-img');
@@ -126,7 +137,6 @@ function setupAuth() {
         }
     });
 
-    // --- CRÉER UN COMPTE ---
     document.getElementById('btn-submit-register')?.addEventListener('click', (e) => {
         e.preventDefault();
         const username = regUsername?.value.trim();
@@ -156,7 +166,6 @@ function setupAuth() {
         updateAuthUI();
     });
 
-    // --- SE CONNECTER ---
     document.getElementById('btn-submit-login')?.addEventListener('click', (e) => {
         e.preventDefault();
         const username = document.getElementById('login-username')?.value.trim();
@@ -180,7 +189,6 @@ function setupAuth() {
         }
     });
 
-    // --- CONNEXION ADMIN ---
     document.getElementById('btn-submit-admin')?.addEventListener('click', (e) => {
         e.preventDefault();
         const pass = document.getElementById('admin-pass')?.value.trim();
@@ -336,13 +344,12 @@ function renderCalendar() {
 }
 
 // ==========================================
-// 6. INJECTION DU TCHAT FLOTTANT (Bas à droite)
+// 6. INJECTION DU TCHAT FLOTTANT (Firebase Direct)
 // ==========================================
 function initFloatingChat() {
     const user = JSON.parse(localStorage.getItem('user_session'));
     const isAdminOnline = localStorage.getItem('admin_online') === 'true';
 
-    // Badge de statut (En ligne / Hors ligne)
     const statusBadge = isAdminOnline 
         ? `<span style="color: #4ade80; font-size: 12px;">🟢 En ligne</span>`
         : `<span style="color: #94a3b8; font-size: 12px;">⚪ Hors ligne</span>`;
@@ -405,6 +412,8 @@ function initFloatingChat() {
     const input = document.getElementById('chat-user-input');
     const btnSend = document.getElementById('btn-send-chat');
 
+    const chatRef = ref(db, 'chat_messages');
+
     btnToggle.addEventListener('click', () => {
         const currentSession = JSON.parse(localStorage.getItem('user_session'));
         if (!currentSession) {
@@ -412,7 +421,6 @@ function initFloatingChat() {
             return;
         }
         chatBox.style.display = (chatBox.style.display === 'flex') ? 'none' : 'flex';
-        if (chatBox.style.display === 'flex') renderMessages();
     });
 
     btnClose.addEventListener('click', () => { chatBox.style.display = 'none'; });
@@ -429,11 +437,14 @@ function initFloatingChat() {
         }
     };
 
-    function renderMessages() {
+    // Écoute des messages en temps réel depuis Firebase
+    onValue(chatRef, (snapshot) => {
         const currentSession = JSON.parse(localStorage.getItem('user_session'));
         if (!currentSession) return;
-        const allMsgs = getChatMessages();
-        
+
+        const data = snapshot.val();
+        const allMsgs = data ? Object.values(data) : [];
+
         const userMsgs = currentSession.isAdmin 
             ? allMsgs 
             : allMsgs.filter(m => m.username === currentSession.username);
@@ -450,7 +461,7 @@ function initFloatingChat() {
             `;
         }).join('');
         container.scrollTop = container.scrollHeight;
-    }
+    });
 
     btnSend.addEventListener('click', sendMessage);
     input.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
@@ -460,19 +471,18 @@ function initFloatingChat() {
         const text = input.value.trim();
         if (!text || !currentSession) return;
 
-        const allMsgs = getChatMessages();
-        allMsgs.push({
+        const newMessage = {
             id: Date.now(),
             username: currentSession.username,
             senderName: currentSession.username,
             text: text,
             fromAdmin: currentSession.isAdmin,
             timestamp: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
-        });
+        };
 
-        saveChatMessages(allMsgs);
-        input.value = '';
-        renderMessages();
+        push(chatRef, newMessage).then(() => {
+            input.value = '';
+        });
     }
 }
 
@@ -564,7 +574,6 @@ document.addEventListener('DOMContentLoaded', () => {
     initFloatingChat();
     init3AoutPage();
 
-    // Boutons navigation calendrier
     document.getElementById('prev-month')?.addEventListener('click', () => {
         currentDate.setMonth(currentDate.getMonth() - 1);
         renderCalendar();
@@ -575,7 +584,6 @@ document.addEventListener('DOMContentLoaded', () => {
         renderCalendar();
     });
 
-    // Formulaire d'inscription / avis atelier
     const workshopForm = document.getElementById('workshop-form');
     if (workshopForm) {
         workshopForm.addEventListener('submit', (e) => {
