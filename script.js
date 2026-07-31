@@ -1,5 +1,5 @@
 // ==========================================
-// 0. CONFIGURATION FIREBASE (Base de données en ligne)
+// 0. CONFIGURATION FIREBASE & INITIALISATION SÉCURISÉE
 // ==========================================
 const firebaseConfig = {
   apiKey: "AIzaSyDt0pDcCjKaRueh4O7gS9G6gzsKKyUdLnE",
@@ -12,11 +12,21 @@ const firebaseConfig = {
   measurementId: "G-PL3ZE3X8TJ"
 };
 
-// Initialisation de Firebase
-if (!firebase.apps.length) {
-    firebase.initializeApp(firebaseConfig);
+let db = null;
+
+// Initialisation sécurisée de Firebase pour éviter le crash du JS
+try {
+    if (typeof firebase !== 'undefined') {
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        db = firebase.database();
+    } else {
+        console.warn("⚠️ Firebase N'EST PAS chargé via les balises script dans le HTML.");
+    }
+} catch (e) {
+    console.error("Erreur d'initialisation Firebase :", e);
 }
-const db = firebase.database();
 
 // ==========================================
 // 1. BASE DE DONNÉES ÉVÉNEMENTS
@@ -44,15 +54,15 @@ function initCarousel() {
     const cardWidth = 320;
 
     if (nextBtn) {
-        nextBtn.addEventListener('click', () => {
+        nextBtn.onclick = () => {
             track.scrollBy({ left: cardWidth, behavior: 'smooth' });
-        });
+        };
     }
 
     if (prevBtn) {
-        prevBtn.addEventListener('click', () => {
+        prevBtn.onclick = () => {
             track.scrollBy({ left: -cardWidth, behavior: 'smooth' });
-        });
+        };
     }
 }
 
@@ -60,7 +70,6 @@ function renderCalendar() {
     const calendarGrid = document.getElementById('calendar-grid');
     if (!calendarGrid) return;
 
-    // Affiche le mois d'août 2026
     const daysInMonth = 31;
     const startDayOffset = 5; // Samedi pour le 1er août 2026
     
@@ -92,7 +101,7 @@ function renderCalendar() {
 }
 
 // ==========================================
-// 3. AUTHENTIFICATION & UTILISATEURS EN LIGNE
+// 3. AUTHENTIFICATION & UTILISATEURS
 // ==========================================
 function updateAuthUI() {
     const user = JSON.parse(localStorage.getItem('user_session'));
@@ -117,7 +126,7 @@ function updateAuthUI() {
         `;
 
         document.getElementById('btn-logout')?.addEventListener('click', () => {
-            if (user.username) {
+            if (user.username && db) {
                 db.ref('presence/' + user.username.toLowerCase().replace(/\./g, '_')).remove();
             }
             localStorage.removeItem('user_session');
@@ -140,7 +149,7 @@ function setupAuth() {
         });
     });
 
-    // Inscription
+    // Inscription (Compte en ligne Firebase ou secours Local)
     document.getElementById('btn-submit-register')?.addEventListener('click', (e) => {
         e.preventDefault();
         const username = document.getElementById('reg-username')?.value.trim();
@@ -153,26 +162,34 @@ function setupAuth() {
         }
 
         const userKey = username.toLowerCase().replace(/\./g, '_');
-        const userRef = db.ref('users/' + userKey);
+        const userData = { username, password, avatar, createdAt: new Date().toLocaleDateString('fr-FR') };
 
-        userRef.once('value', snapshot => {
-            if (snapshot.exists()) {
-                alert("Ce pseudo est déjà utilisé. Choisissez-en un autre.");
-            } else {
-                const userData = { username, password, avatar, createdAt: new Date().toLocaleDateString('fr-FR') };
-                userRef.set(userData).then(() => {
-                    const session = { username: userData.username, avatar: userData.avatar, isAdmin: false };
-                    localStorage.setItem('user_session', JSON.stringify(session));
-                    db.ref('presence/' + userKey).set(true);
-                    alert("Compte créé avec succès !");
-                    if(regModal) regModal.style.display = 'none';
-                    location.reload();
-                });
-            }
-        });
+        if (db) {
+            const userRef = db.ref('users/' + userKey);
+            userRef.once('value', snapshot => {
+                if (snapshot.exists()) {
+                    alert("Ce pseudo est déjà utilisé. Choisissez-en un autre.");
+                } else {
+                    userRef.set(userData).then(() => {
+                        const session = { username: userData.username, avatar: userData.avatar, isAdmin: false };
+                        localStorage.setItem('user_session', JSON.stringify(session));
+                        db.ref('presence/' + userKey).set(true);
+                        alert("Compte créé avec succès !");
+                        if(regModal) regModal.style.display = 'none';
+                        location.reload();
+                    });
+                }
+            });
+        } else {
+            // Mode secours au cas où Firebase ne charge pas
+            const session = { username: userData.username, avatar: userData.avatar, isAdmin: false };
+            localStorage.setItem('user_session', JSON.stringify(session));
+            alert("Compte créé en local !");
+            location.reload();
+        }
     });
 
-    // Connexion Membre (Firebase)
+    // Connexion Membre
     document.getElementById('btn-submit-login')?.addEventListener('click', (e) => {
         e.preventDefault();
         const username = document.getElementById('login-username')?.value.trim();
@@ -183,19 +200,23 @@ function setupAuth() {
             return;
         }
 
-        const userKey = username.toLowerCase().replace(/\./g, '_');
-        db.ref('users/' + userKey).once('value', snapshot => {
-            const userData = snapshot.val();
-            if (userData && userData.password === password) {
-                const session = { username: userData.username, avatar: userData.avatar, isAdmin: false };
-                localStorage.setItem('user_session', JSON.stringify(session));
-                db.ref('presence/' + userKey).set(true);
-                if(regModal) regModal.style.display = 'none';
-                location.reload();
-            } else {
-                alert("Pseudo ou mot de passe incorrect.");
-            }
-        });
+        if (db) {
+            const userKey = username.toLowerCase().replace(/\./g, '_');
+            db.ref('users/' + userKey).once('value', snapshot => {
+                const userData = snapshot.val();
+                if (userData && userData.password === password) {
+                    const session = { username: userData.username, avatar: userData.avatar, isAdmin: false };
+                    localStorage.setItem('user_session', JSON.stringify(session));
+                    db.ref('presence/' + userKey).set(true);
+                    if(regModal) regModal.style.display = 'none';
+                    location.reload();
+                } else {
+                    alert("Pseudo ou mot de passe incorrect.");
+                }
+            });
+        } else {
+            alert("⚠️ La connexion au serveur échoue. Vérifiez votre connexion.");
+        }
     });
 
     // Connexion Admin
@@ -205,7 +226,7 @@ function setupAuth() {
         if (pass === 'admin123') {
             const session = { username: "Admin", avatar: "https://api.dicebear.com/7.x/bottts/svg?seed=Admin", isAdmin: true };
             localStorage.setItem('user_session', JSON.stringify(session));
-            db.ref('presence/Admin').set(true);
+            if(db) db.ref('presence/Admin').set(true);
             if(adminModal) adminModal.style.display = 'none';
             location.reload();
         } else {
@@ -215,7 +236,7 @@ function setupAuth() {
 }
 
 // ==========================================
-// 4. CHAT FLOTTANT TEMPS RÉEL (Firebase)
+// 4. CHAT FLOTTANT TEMPS RÉEL
 // ==========================================
 function initFloatingChat() {
     const chatWidgetHTML = `
@@ -306,6 +327,7 @@ function initFloatingChat() {
     window.addEmoji = function(emoji) { if (input) input.value += emoji; };
 
     function loadAdminUserList() {
+        if (!db) return;
         db.ref('users').on('value', snapshot => {
             const users = snapshot.val() || {};
             const usernames = Object.values(users).map(u => u.username).filter(u => u !== 'Admin');
@@ -332,6 +354,7 @@ function initFloatingChat() {
     });
 
     function listenToMessages(targetUser) {
+        if (!db) return;
         db.ref('chats/' + targetUser.toLowerCase().replace(/\./g, '_')).on('value', snapshot => {
             const currentSession = JSON.parse(localStorage.getItem('user_session'));
             const msgs = snapshot.val() || {};
@@ -364,7 +387,7 @@ function initFloatingChat() {
     function sendMessage() {
         const currentSession = JSON.parse(localStorage.getItem('user_session'));
         const text = input.value.trim();
-        if (!text || !currentSession) return;
+        if (!text || !currentSession || !db) return;
 
         const target = currentSession.isAdmin ? selectedUserForAdmin : currentSession.username;
         if (!target) {
@@ -386,36 +409,7 @@ function initFloatingChat() {
 }
 
 // ==========================================
-// 5. GESTION DES PROPOSITIONS & REPAS
-// ==========================================
-function initSuggestionsAndMeals() {
-    const formMeal = document.getElementById('form-add-meal');
-    if (formMeal) {
-        formMeal.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const session = JSON.parse(localStorage.getItem('user_session'));
-            if (!session) { alert("Connectez-vous pour proposer un plat !"); return; }
-
-            const title = document.getElementById('meal-title')?.value.trim();
-            const category = document.getElementById('meal-category')?.value || 'plat';
-
-            if (title) {
-                db.ref('meals').push({
-                    title,
-                    category,
-                    author: session.username,
-                    likes: 0
-                }).then(() => {
-                    alert("Proposition envoyée !");
-                    formMeal.reset();
-                });
-            }
-        });
-    }
-}
-
-// ==========================================
-// 6. INITIALISATION TOTALE
+// 5. INITIALISATION DE LA PAGE
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
     initCarousel();
@@ -423,6 +417,5 @@ document.addEventListener('DOMContentLoaded', () => {
     setupAuth();
     updateAuthUI();
     initFloatingChat();
-    initSuggestionsAndMeals();
 });
 
