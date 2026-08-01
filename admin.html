@@ -5,18 +5,32 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Espace Administration</title>
     <style>
-        body { font-family: system-ui, sans-serif; background-color: #0f172a; color: #f8fafc; padding: 20px; }
-        .container { max-width: 1000px; margin: 0 auto; background: #1e293b; padding: 25px; border-radius: 12px; }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; border-bottom: 1px solid #334155; padding-bottom: 15px; }
-        .btn { background: #0284c7; color: white; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-weight: bold; border: none; cursor: pointer; }
+        * { box-sizing: border-box; }
+        body { font-family: system-ui, -apple-system, sans-serif; background-color: #0f172a; color: #f8fafc; padding: 15px; margin: 0; }
+        .container { max-width: 1000px; margin: 0 auto; background: #1e293b; padding: 20px; border-radius: 12px; border: 1px solid #334155; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; border-bottom: 1px solid #334155; padding-bottom: 15px; flex-wrap: wrap; gap: 10px; }
+        .header h2 { margin: 0; font-size: 20px; color: #38bdf8; }
+        .btn { background: #0284c7; color: white; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-weight: bold; border: none; cursor: pointer; font-size: 14px; display: inline-block; }
         .btn-danger { background: #ef4444; }
-        .btn-sm { padding: 4px 8px; font-size: 12px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; margin-bottom: 30px; }
-        th, td { border: 1px solid #334155; padding: 12px; text-align: left; }
-        th { background: #0f172a; color: #38bdf8; }
-        .avatar-img { width: 35px; height: 35px; border-radius: 50%; object-fit: cover; vertical-align: middle; margin-right: 8px; }
+        .btn-danger:hover { background: #dc2626; }
+        .btn-sm { padding: 5px 10px; font-size: 12px; }
+        
+        /* Styles des tableaux (Version Bureau) */
+        .table-responsive { width: 100%; overflow-x: auto; margin-bottom: 30px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; min-width: 500px; }
+        th, td { border: 1px solid #334155; padding: 10px 12px; text-align: left; }
+        th { background: #0f172a; color: #38bdf8; font-size: 14px; }
+        .avatar-img { width: 35px; height: 35px; border-radius: 50%; object-fit: cover; vertical-align: middle; }
         .badge { background: #0284c7; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 12px; }
-        .password-tag { background: #334155; color: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-family: monospace; }
+        .password-tag { background: #334155; color: #f59e0b; padding: 3px 8px; border-radius: 4px; font-family: monospace; font-weight: bold; }
+
+        /* Ajustements Téléphone (Mobile-First) */
+        @media (max-width: 600px) {
+            body { padding: 10px; }
+            .container { padding: 12px; }
+            th, td { padding: 8px; font-size: 13px; }
+            .password-tag { font-size: 11px; }
+        }
     </style>
 </head>
 <body>
@@ -28,45 +42,56 @@
         </div>
 
         <h3>👥 Utilisateurs inscrits</h3>
-        <table>
-            <thead>
-                <tr>
-                    <th>Avatar</th>
-                    <th>Pseudo</th>
-                    <th>Mot de passe 🔑</th>
-                    <th>Inscription</th>
-                    <th>Action</th>
-                </tr>
-            </thead>
-            <tbody id="users-table-body"></tbody>
-        </table>
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Avatar</th>
+                        <th>Pseudo</th>
+                        <th>Mot de passe 🔑</th>
+                        <th>Inscription</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="users-table-body"></tbody>
+            </table>
+        </div>
 
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-            <h3>📋 Questionnaires de satisfaction reçus</h3>
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 20px;">
+            <h3 style="margin: 0;">📋 Questionnaires de satisfaction reçus</h3>
             <button id="btn-clear-submissions" class="btn btn-danger btn-sm">Effacer les réponses</button>
         </div>
 
-        <table>
-            <thead>
-                <tr>
-                    <th>Date d'envoi</th>
-                    <th>Atelier</th>
-                    <th>Utilisateur</th>
-                    <th>Avis / Satisfaction</th>
-                    <th>Commentaire</th>
-                </tr>
-            </thead>
-            <tbody id="submissions-table-body"></tbody>
-        </table>
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date d'envoi</th>
+                        <th>Atelier</th>
+                        <th>Utilisateur</th>
+                        <th>Avis / Satisfaction</th>
+                        <th>Commentaire</th>
+                    </tr>
+                </thead>
+                <tbody id="submissions-table-body"></tbody>
+            </table>
+        </div>
     </div>
 
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+
+    <script src="script.js"></script>
+
     <script>
+        // 1. VÉRIFICATION DE LA SESSION ADMIN
         const session = JSON.parse(localStorage.getItem('user_session'));
         if (!session || !session.isAdmin) {
             alert("Accès réservé à l'administrateur !");
             window.location.href = "index.html";
         }
 
+        // 2. CHARGEMENT DE LA LISTE DES MEMBRES
         function loadUsers() {
             const tbody = document.getElementById('users-table-body');
             const users = JSON.parse(localStorage.getItem('registered_users')) || [];
@@ -80,22 +105,32 @@
                 <tr>
                     <td><img src="${user.avatar}" class="avatar-img" onerror="this.src='https://api.dicebear.com/7.x/bottts/svg?seed=User'"></td>
                     <td><strong>${user.username}</strong></td>
-                    <td><span class="password-tag">${user.password}</span></td>
+                    <td><span class="password-tag">${user.password || 'Non spécifié'}</span></td>
                     <td><small>${user.createdAt || 'N/A'}</small></td>
                     <td><button class="btn btn-danger btn-sm" onclick="deleteUser(${user.id})">❌ Supprimer</button></td>
                 </tr>
             `).join('');
         }
 
+        // 3. SUPPRESSION D'UN MEMBRE
         function deleteUser(userId) {
-            if (confirm("Supprimer cet utilisateur ?")) {
+            if (confirm("Voulez-vous vraiment supprimer cet utilisateur ?")) {
                 let users = JSON.parse(localStorage.getItem('registered_users')) || [];
                 users = users.filter(u => u.id !== userId);
                 localStorage.setItem('registered_users', JSON.stringify(users));
                 loadUsers();
+                // Si la fonction de chat est disponible, on peut réactualiser la liste
+                if (typeof initFloatingChat === 'function') {
+                    const existingChat = document.getElementById('floating-chat-box');
+                    if (existingChat) existingChat.remove();
+                    const existingBtn = document.getElementById('floating-chat-btn');
+                    if (existingBtn) existingBtn.remove();
+                    initFloatingChat();
+                }
             }
         }
 
+        // 4. CHARGEMENT DES FORMULAIRES DE SATISFACTION
         function loadSubmissions() {
             const tbody = document.getElementById('submissions-table-body');
             const submissions = JSON.parse(localStorage.getItem('form_submissions')) || [];
@@ -116,6 +151,7 @@
             `).join('');
         }
 
+        // 5. VIDER LES AVIS
         document.getElementById('btn-clear-submissions')?.addEventListener('click', () => {
             if (confirm("Effacer tous les avis ?")) {
                 localStorage.removeItem('form_submissions');
@@ -123,8 +159,11 @@
             }
         });
 
-        loadUsers();
-        loadSubmissions();
+        // 6. INITIALISATION
+        document.addEventListener('DOMContentLoaded', () => {
+            loadUsers();
+            loadSubmissions();
+        });
     </script>
 </body>
 </html>
