@@ -1,5 +1,5 @@
 // ==========================================
-// 0. INITIALISATION FIREBASE (Version Classique)
+// 0. INITIALISATION FIREBASE
 // ==========================================
 const firebaseConfig = {
     apiKey: "AIzaSyDt0pDcCjKaRueh4O7gS9G6gzsKKyUdLnE",
@@ -12,7 +12,9 @@ const firebaseConfig = {
     measurementId: "G-PL3ZE3X8TJ"
 };
 
-firebase.initializeApp(firebaseConfig);
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+}
 const db = firebase.database();
 
 // ==========================================
@@ -31,11 +33,6 @@ window.eventsData = window.eventsData || {
 // ==========================================
 // 2. GESTION DU STOCKAGE LOCAL (LocalStorage)
 // ==========================================
-function getUsers() {
-    try { return JSON.parse(localStorage.getItem('registered_users')) || []; } catch(e) { return []; }
-}
-function saveUsers(users) { localStorage.setItem('registered_users', JSON.stringify(users)); }
-
 function getSubmissions() {
     try { return JSON.parse(localStorage.getItem('form_submissions')) || []; } catch(e) { return []; }
 }
@@ -134,6 +131,7 @@ function setupAuth() {
         }
     });
 
+    // INSCRIPTION : Sauvegarde sur FIREBASE
     document.getElementById('btn-submit-register')?.addEventListener('click', (e) => {
         e.preventDefault();
         const username = regUsername?.value.trim();
@@ -145,24 +143,37 @@ function setupAuth() {
             return;
         }
 
-        let users = getUsers();
-        if (users.some(u => u.username.toLowerCase() === username.toLowerCase())) {
-            alert("Ce pseudo est déjà utilisé. Veuillez en choisir un autre ou vous connecter.");
-            return;
-        }
+        const userKey = username.toLowerCase();
 
-        const newUser = { id: Date.now(), username: username, password: password, avatar: avatar, createdAt: new Date().toLocaleDateString('fr-FR') };
-        users.push(newUser);
-        saveUsers(users);
+        // Vérifier si le pseudo existe déjà sur Firebase
+        db.ref('users/' + userKey).once('value', (snapshot) => {
+            if (snapshot.exists()) {
+                alert("Ce pseudo est déjà utilisé. Choisissez-en un autre !");
+                return;
+            }
 
-        const session = { username: newUser.username, avatar: newUser.avatar, isAdmin: false };
-        localStorage.setItem('user_session', JSON.stringify(session));
+            const newUser = {
+                id: Date.now(),
+                username: username,
+                password: password,
+                avatar: avatar,
+                createdAt: new Date().toLocaleDateString('fr-FR')
+            };
 
-        alert("Inscription réussie !");
-        if(regModal) regModal.style.display = 'none';
-        updateAuthUI();
+            // Enregistrement Firebase
+            db.ref('users/' + userKey).set(newUser).then(() => {
+                const session = { username: newUser.username, avatar: newUser.avatar, isAdmin: false };
+                localStorage.setItem('user_session', JSON.stringify(session));
+
+                alert("Inscription réussie !");
+                if(regModal) regModal.style.display = 'none';
+                updateAuthUI();
+                location.reload();
+            });
+        });
     });
 
+    // CONNEXION UTILISATEUR via FIREBASE
     document.getElementById('btn-submit-login')?.addEventListener('click', (e) => {
         e.preventDefault();
         const username = document.getElementById('login-username')?.value.trim();
@@ -173,19 +184,22 @@ function setupAuth() {
             return;
         }
 
-        const users = getUsers();
-        const foundUser = users.find(u => u.username.toLowerCase() === username.toLowerCase() && u.password === password);
-
-        if (foundUser) {
-            const session = { username: foundUser.username, avatar: foundUser.avatar, isAdmin: false };
-            localStorage.setItem('user_session', JSON.stringify(session));
-            if(regModal) regModal.style.display = 'none';
-            updateAuthUI();
-        } else {
-            alert("Pseudo ou mot de passe incorrect.");
-        }
+        const userKey = username.toLowerCase();
+        db.ref('users/' + userKey).once('value', (snapshot) => {
+            const user = snapshot.val();
+            if (user && user.password === password) {
+                const session = { username: user.username, avatar: user.avatar, isAdmin: false };
+                localStorage.setItem('user_session', JSON.stringify(session));
+                if(regModal) regModal.style.display = 'none';
+                updateAuthUI();
+                location.reload();
+            } else {
+                alert("Pseudo ou mot de passe incorrect.");
+            }
+        });
     });
 
+    // CONNEXION ADMIN
     document.getElementById('btn-submit-admin')?.addEventListener('click', (e) => {
         e.preventDefault();
         const pass = document.getElementById('admin-pass')?.value.trim();
@@ -198,6 +212,7 @@ function setupAuth() {
 
             if(adminModal) adminModal.style.display = 'none';
             updateAuthUI();
+            location.reload();
         } else {
             if (errorMsg) {
                 errorMsg.textContent = "Mot de passe incorrect.";
@@ -341,7 +356,7 @@ function renderCalendar() {
 }
 
 // ==========================================
-// 6. INJECTION DU TCHAT FLOTTANT (Firebase Compat)
+// 6. INJECTION DU TCHAT FLOTTANT (Firebase Sync)
 // ==========================================
 window.addEmoji = function(emoji) {
     const input = document.getElementById('chat-user-input');
@@ -358,130 +373,6 @@ window.sendGifPrompt = function() {
     }
 };
 
-function initFloatingChat() {
-    const isAdminOnline = localStorage.getItem('admin_online') === 'true';
-
-    const statusBadge = isAdminOnline 
-        ? `<span style="color: #4ade80; font-size: 12px;">🟢 En ligne</span>`
-        : `<span style="color: #94a3b8; font-size: 12px;">⚪ Hors ligne</span>`;
-
-    const chatWidgetHTML = `
-        <style>
-            #floating-chat-btn { position: fixed; bottom: 20px; right: 20px; background: #0284c7; color: white; border: none; padding: 12px 18px; border-radius: 30px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 9999; font-size: 15px; }
-            #floating-chat-box { position: fixed; bottom: 75px; right: 20px; width: 330px; height: 430px; background: white; border-radius: 12px; box-shadow: 0 5px 25px rgba(0,0,0,0.25); display: none; flex-direction: column; z-index: 9999; border: 1px solid #cbd5e1; overflow: hidden; font-family: Arial, sans-serif; }
-            .chat-header { background: #0284c7; color: white; padding: 10px 14px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
-            .chat-messages { flex: 1; padding: 10px; overflow-y: auto; background: #f8fafc; display: flex; flex-direction: column; gap: 8px; }
-            .msg-bubble { max-width: 80%; padding: 8px 12px; border-radius: 10px; font-size: 13px; line-height: 1.4; word-break: break-word; }
-            .msg-bubble img { max-width: 100%; border-radius: 6px; margin-top: 4px; display: block; }
-            .msg-user { background: #0284c7; color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
-            .msg-admin { background: #e2e8f0; color: #0f172a; align-self: flex-start; border-bottom-left-radius: 2px; }
-            
-            .emoji-bar { background: #f1f5f9; padding: 4px 8px; display: flex; gap: 6px; border-top: 1px solid #e2e8f0; }
-            .emoji-btn { background: none; border: none; font-size: 16px; cursor: pointer; padding: 2px; }
-            .emoji-btn:hover { transform: scale(1.2); }
-            
-            .chat-input-area { display: flex; padding: 8px; background: white; border-top: 1px solid #e2e8f0; }
-            .chat-input-area input { flex: 1; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; outline: none; }
-            .chat-input-area button { background: #16a34a; color: white; border: none; padding: 8px 12px; margin-left: 5px; border-radius: 6px; cursor: pointer; font-weight: bold; }
-        </style>
-
-        <button id="floating-chat-btn">💬 Chat Admin</button>
-        
-        <div id="floating-chat-box">
-            <div class="chat-header">
-                <div>
-                    <div>💬 Chat Admin</div>
-                    <div>${statusBadge}</div>
-                </div>
-                <span id="close-chat" style="cursor:pointer; font-size:20px;">&times;</span>
-            </div>
-            
-            <div class="chat-messages" id="chat-messages-container"></div>
-            
-            <div class="emoji-bar">
-                <button class="emoji-btn" onclick="addEmoji('😊')">😊</button>
-                <button class="emoji-btn" onclick="addEmoji('😂')">😂</button>
-                <button class="emoji-btn" onclick="addEmoji('❤️')">❤️</button>
-                <button class="emoji-btn" onclick="addEmoji('👍')">👍</button>
-                <button class="emoji-btn" onclick="addEmoji('🎉')">🎉</button>
-                <button class="emoji-btn" onclick="sendGifPrompt()" style="font-size:11px; font-weight:bold; background:#e2e8f0; border-radius:4px; padding:2px 5px;">🖼️ GIF</button>
-            </div>
-
-            <div class="chat-input-area">
-                <input type="text" id="chat-user-input" placeholder="Message ou lien d'image/GIF...">
-                <button id="btn-send-chat">Envoyer</button>
-            </div>
-        </div>
-    `;
-
-    document.body.insertAdjacentHTML('beforeend', chatWidgetHTML);
-
-    const btnToggle = document.getElementById('floating-chat-btn');
-    const chatBox = document.getElementById('floating-chat-box');
-    const btnClose = document.getElementById('close-chat');
-    const container = document.getElementById('chat-messages-container');
-    const input = document.getElementById('chat-user-input');
-    const btnSend = document.getElementById('btn-send-chat');
-
-    btnToggle.addEventListener('click', () => {
-        const currentSession = JSON.parse(localStorage.getItem('user_session'));
-        if (!currentSession) {
-            alert("⚠️ Vous devez être connecté(e) pour utiliser le tchat !");
-            return;
-        }
-        chatBox.style.display = (chatBox.style.display === 'flex') ? 'none' : 'flex';
-    });
-
-    btnClose.addEventListener('click', () => { chatBox.style.display = 'none'; });
-
-    // Écoute des messages Firebase Realtime
-    db.ref('chat_messages').on('value', (snapshot) => {
-        const currentSession = JSON.parse(localStorage.getItem('user_session'));
-        if (!currentSession) return;
-
-        const data = snapshot.val();
-        const allMsgs = data ? Object.values(data) : [];
-
-        const userMsgs = currentSession.isAdmin 
-            ? allMsgs 
-            : allMsgs.filter(m => m.username === currentSession.username);
-
-        container.innerHTML = userMsgs.map(m => {
-            const isImage = m.text.match(/\.(jpeg|jpg|gif|png|webp)$/i) || m.text.includes('giphy.com') || m.text.includes('tenor.com');
-            const content = isImage ? `<img src="${m.text}" alt="GIF">` : m.text;
-
-            return `
-                <div class="msg-bubble ${m.fromAdmin ? 'msg-admin' : 'msg-user'}">
-                    <strong style="display:block; font-size:11px; opacity:0.8;">${m.senderName}</strong>
-                    ${content}
-                </div>
-            `;
-        }).join('');
-        container.scrollTop = container.scrollHeight;
-    });
-
-    btnSend.addEventListener('click', sendMessage);
-    input.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
-
-    function sendMessage() {
-        const currentSession = JSON.parse(localStorage.getItem('user_session'));
-        const text = input.value.trim();
-        if (!text || !currentSession) return;
-
-        const newMessage = {
-            id: Date.now(),
-            username: currentSession.username,
-            senderName: currentSession.username,
-            text: text,
-            fromAdmin: currentSession.isAdmin,
-            timestamp: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
-        };
-
-        db.ref('chat_messages').push(newMessage).then(() => {
-            input.value = '';
-        });
-    }
-}
 function initFloatingChat() {
     const session = JSON.parse(localStorage.getItem('user_session'));
     const isAdmin = session?.isAdmin || false;
@@ -552,11 +443,15 @@ function initFloatingChat() {
 
     let activeChatTarget = isAdmin ? "" : (session?.username || "");
 
-    // Remplir le menu déroulant des utilisateurs pour l'admin
+    // Charger les utilisateurs directement de FIREBASE
     if (isAdmin && selectUser) {
-        const users = getUsers();
-        selectUser.innerHTML = '<option value="">-- Sélectionner un membre --</option>' + 
-            users.map(u => `<option value="${u.username}">${u.username}</option>`).join('');
+        db.ref('users').on('value', (snapshot) => {
+            const data = snapshot.val() || {};
+            const usersList = Object.values(data);
+            
+            selectUser.innerHTML = '<option value="">-- Sélectionner un membre --</option>' + 
+                usersList.map(u => `<option value="${u.username}">${u.username}</option>`).join('');
+        });
 
         selectUser.addEventListener('change', (e) => {
             activeChatTarget = e.target.value;
@@ -593,8 +488,8 @@ function initFloatingChat() {
             const data = snapshot.val();
             const allMsgs = data ? Object.values(data) : [];
 
-            // Filtrer uniquement les messages du membre sélectionné
-            const chatMsgs = allMsgs.filter(m => m.username === activeChatTarget);
+            // Filtrer par membre
+            const chatMsgs = allMsgs.filter(m => m.username.toLowerCase() === activeChatTarget.toLowerCase());
 
             container.innerHTML = chatMsgs.map(m => {
                 const isImage = m.text.match(/\.(jpeg|jpg|gif|png|webp)$/i) || m.text.includes('giphy.com') || m.text.includes('tenor.com');
@@ -627,7 +522,7 @@ function initFloatingChat() {
 
         const newMessage = {
             id: Date.now(),
-            username: activeChatTarget, // Rattaché au profil du membre
+            username: activeChatTarget,
             senderName: currentSession.username,
             text: text,
             fromAdmin: currentSession.isAdmin,
@@ -639,6 +534,7 @@ function initFloatingChat() {
         });
     }
 }
+
 // ==========================================
 // 7. LOGIQUE SPÉCIFIQUE À L'ATELIER DU 3 AOÛT
 // ==========================================
@@ -685,33 +581,29 @@ function init3AoutPage() {
             const session = JSON.parse(localStorage.getItem('user_session'));
 
             if (!session) {
-                alert("⚠️ Vous devez être connecté(e) pour faire une proposition !");
-                const regModal = document.getElementById('register-modal');
-                if (regModal) regModal.style.display = 'flex';
+                alert("⚠️ Vous devez être connecté(e) pour envoyer une proposition !");
                 return;
             }
 
-            const messageText = proposalInput.value.trim();
-            if (!messageText) return;
+            const text = proposalInput.value.trim();
+            if (!text) return;
 
             const newProposal = {
                 id: Date.now(),
                 workshopId: WORKSHOP_3AOUT_ID,
-                workshopName: "3 Août - Film, Débat & Just Dance",
+                workshopName: "Film & Débat du 3 Août",
                 userName: session.username,
-                userAvatar: session.avatar,
-                message: messageText,
-                reply: null,
-                date: new Date().toLocaleString('fr-FR'),
-                submittedAt: new Date().toLocaleString('fr-FR')
+                message: text,
+                date: new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
             };
 
-            let proposals = JSON.parse(localStorage.getItem('workshop_proposals')) || [];
+            const proposals = JSON.parse(localStorage.getItem('workshop_proposals')) || [];
             proposals.push(newProposal);
             localStorage.setItem('workshop_proposals', JSON.stringify(proposals));
 
-            proposalInput.value = "";
+            proposalInput.value = '';
             renderProposals3Aout();
+            alert("Votre proposition a été envoyée !");
         });
     }
 }
@@ -720,47 +612,9 @@ function init3AoutPage() {
 // 8. INITIALISATION GLOBALE
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
-    setupAuth();
     updateAuthUI();
+    setupAuth();
     renderCalendar();
-    createDots();
     initFloatingChat();
     init3AoutPage();
-
-    document.getElementById('prev-month')?.addEventListener('click', () => {
-        currentDate.setMonth(currentDate.getMonth() - 1);
-        renderCalendar();
-    });
-
-    document.getElementById('next-month')?.addEventListener('click', () => {
-        currentDate.setMonth(currentDate.getMonth() + 1);
-        renderCalendar();
-    });
-
-    const workshopForm = document.getElementById('workshop-form');
-    if (workshopForm) {
-        workshopForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const userSession = JSON.parse(localStorage.getItem('user_session'));
-
-            const formData = {
-                id: Date.now(),
-                name: userSession ? userSession.username : (document.getElementById('name')?.value || "Anonyme"),
-                satisfaction: document.getElementById('satisfaction')?.value || "Non spécifié",
-                eventDate: document.getElementById('selected-date')?.value || "Non précisée",
-                submittedAt: new Date().toLocaleString('fr-FR')
-            };
-
-            let submissions = getSubmissions();
-            submissions.push(formData);
-            saveSubmissions(submissions);
-
-            const formMessage = document.getElementById('form-message');
-            if (formMessage) {
-                formMessage.style.color = '#16a34a';
-                formMessage.textContent = '✅ Réponses enregistrées !';
-            }
-            workshopForm.reset();
-        });
-    }
 });
