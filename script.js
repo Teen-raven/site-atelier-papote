@@ -290,6 +290,11 @@ const monthNames = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juil
 let currentDate = new Date();
 let selectedDateStr = "";
 
+function changeMonth(direction) {
+    currentDate.setMonth(currentDate.getMonth() + direction);
+    renderCalendar();
+}
+
 function renderCalendar() {
     const daysContainer = document.getElementById('calendar-days');
     if (!daysContainer) return;
@@ -363,6 +368,14 @@ function renderCalendar() {
     }
 }
 
+// Configuration des clics sur les flèches du calendrier
+function setupCalendarButtons() {
+    const prevBtn = document.getElementById('prev-month') || document.querySelector('.calendar-prev');
+    const nextBtn = document.getElementById('next-month') || document.querySelector('.calendar-next');
+
+    if (prevBtn) prevBtn.addEventListener('click', () => changeMonth(-1));
+    if (nextBtn) nextBtn.addEventListener('click', () => changeMonth(1));
+}
 // ==========================================
 // 6. INJECTION DU TCHAT FLOTTANT
 // ==========================================
@@ -622,6 +635,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateAuthUI();
     setupAuth();
     renderCalendar();
+    setupCalendarButtons(); // <-- Ligne ajoutée pour les flèches
     initFloatingChat();
     init3AoutPage();
 });
