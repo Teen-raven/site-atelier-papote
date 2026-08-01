@@ -1,5 +1,6 @@
+
 // ==========================================
-// 0. INITIALISATION FIREBASE
+// 0. INITIALISATION FIREBASE (Version Compat/Classique)
 // ==========================================
 const firebaseConfig = {
     apiKey: "AIzaSyDt0pDcCjKaRueh4O7gS9G6gzsKKyUdLnE",
@@ -12,6 +13,7 @@ const firebaseConfig = {
     measurementId: "G-PL3ZE3X8TJ"
 };
 
+// Initialisation globale sans "import"
 if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }
