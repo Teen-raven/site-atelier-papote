@@ -1,5 +1,6 @@
+
 // ==========================================
-// 0. INITIALISATION FIREBASE (Version Compat/Classique)
+// 0. INITIALISATION FIREBASE (Sécurisée Mobile & PC)
 // ==========================================
 const firebaseConfig = {
     apiKey: "AIzaSyDt0pDcCjKaRueh4O7gS9G6gzsKKyUdLnE",
@@ -12,11 +13,16 @@ const firebaseConfig = {
     measurementId: "G-PL3ZE3X8TJ"
 };
 
-// Initialisation sans module import
-if (typeof firebase !== 'undefined' && !firebase.apps.length) {
-    firebase.initializeApp(firebaseConfig);
+// Initialisation sûre
+let db = null;
+if (typeof firebase !== 'undefined') {
+    if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+    }
+    db = firebase.database();
+} else {
+    console.error("Firebase CDN non chargé ! Vérifiez vos balises <script> dans le HTML.");
 }
-const db = typeof firebase !== 'undefined' ? firebase.database() : null;
 
 // ==========================================
 // 1. BASE DE DONNÉES ÉVÉNEMENTS
