@@ -80,6 +80,7 @@ function setupAuth() {
     const regModal = document.getElementById('register-modal');
     const adminModal = document.getElementById('admin-modal');
 
+    // Ouverture des modales
     document.getElementById('btn-open-register')?.addEventListener('click', () => { 
         if(regModal) regModal.style.display = 'flex'; 
     });
@@ -88,6 +89,7 @@ function setupAuth() {
         if(adminModal) adminModal.style.display = 'flex'; 
     });
 
+    // Fermeture des modales
     document.querySelectorAll('.close-modal').forEach(btn => {
         btn.addEventListener('click', () => {
             if(regModal) regModal.style.display = 'none';
@@ -95,6 +97,7 @@ function setupAuth() {
         });
     });
 
+    // Gestion des onglets Connexion / Inscription
     const tabLogin = document.getElementById('tab-login');
     const tabRegister = document.getElementById('tab-register');
     const formLogin = document.getElementById('form-login');
@@ -116,6 +119,7 @@ function setupAuth() {
         });
     }
 
+    // Gestion de la prévisualisation de l'avatar
     const regUsername = document.getElementById('reg-username');
     const regAvatar = document.getElementById('reg-avatar');
     const avatarPreviewImg = document.getElementById('avatar-preview-img');
@@ -133,7 +137,9 @@ function setupAuth() {
         }
     });
 
-    // INSCRIPTION : Sauvegarde sur FIREBASE
+    // -------------------------------------------------------------
+    // 1. INSCRIPTION (Enregistrement de l'utilisateur sur Firebase)
+    // -------------------------------------------------------------
     document.getElementById('btn-submit-register')?.addEventListener('click', (e) => {
         e.preventDefault();
         const username = regUsername?.value.trim();
@@ -147,10 +153,9 @@ function setupAuth() {
 
         const userKey = username.toLowerCase();
 
-        // Vérifier si le pseudo existe déjà sur Firebase
         db.ref('users/' + userKey).once('value', (snapshot) => {
             if (snapshot.exists()) {
-                alert("Ce pseudo est déjà utilisé. Choisissez-en un autre !");
+                alert("Ce pseudo est déjà utilisé. Choisissez-en un autre ou connectez-vous !");
                 return;
             }
 
@@ -162,7 +167,6 @@ function setupAuth() {
                 createdAt: new Date().toLocaleDateString('fr-FR')
             };
 
-            // Enregistrement Firebase
             db.ref('users/' + userKey).set(newUser).then(() => {
                 const session = { username: newUser.username, avatar: newUser.avatar, isAdmin: false };
                 localStorage.setItem('user_session', JSON.stringify(session));
@@ -174,57 +178,6 @@ function setupAuth() {
             });
         });
     });
-
-    // CONNEXION UTILISATEUR via FIREBASE
-    document.getElementById('btn-submit-login')?.addEventListener('click', (e) => {
-        e.preventDefault();
-        const username = document.getElementById('login-username')?.value.trim();
-        const password = document.getElementById('login-password')?.value.trim();
-
-        if (!username || !password) {
-            alert("Veuillez entrer votre pseudo et votre mot de passe.");
-            return;
-        }
-
-        const userKey = username.toLowerCase();
-        db.ref('users/' + userKey).once('value', (snapshot) => {
-            const user = snapshot.val();
-            if (user && user.password === password) {
-                const session = { username: user.username, avatar: user.avatar, isAdmin: false };
-                localStorage.setItem('user_session', JSON.stringify(session));
-                if(regModal) regModal.style.display = 'none';
-                updateAuthUI();
-                location.reload();
-            } else {
-                alert("Pseudo ou mot de passe incorrect.");
-            }
-        });
-    });
-
-    // CONNEXION ADMIN
-    document.getElementById('btn-submit-admin')?.addEventListener('click', (e) => {
-        e.preventDefault();
-        const pass = document.getElementById('admin-pass')?.value.trim();
-        const errorMsg = document.getElementById('admin-error-msg');
-
-        if (pass === 'admin123') {
-            const session = { username: "Admin", avatar: "https://api.dicebear.com/7.x/bottts/svg?seed=Admin", isAdmin: true };
-            localStorage.setItem('user_session', JSON.stringify(session));
-            localStorage.setItem('admin_online', 'true');
-
-            if(adminModal) adminModal.style.display = 'none';
-            updateAuthUI();
-            location.reload();
-        } else {
-            if (errorMsg) {
-                errorMsg.textContent = "Mot de passe incorrect.";
-                errorMsg.style.display = "block";
-            } else {
-                alert("Mot de passe administrateur incorrect.");
-            }
-        }
-    });
-}
 
 // ==========================================
 // 4. CARROUSEL D'IMAGES
