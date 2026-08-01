@@ -482,7 +482,163 @@ function initFloatingChat() {
         });
     }
 }
+function initFloatingChat() {
+    const session = JSON.parse(localStorage.getItem('user_session'));
+    const isAdmin = session?.isAdmin || false;
 
+    const chatWidgetHTML = `
+        <style>
+            #floating-chat-btn { position: fixed; bottom: 20px; right: 20px; background: #0284c7; color: white; border: none; padding: 12px 18px; border-radius: 30px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 9999; font-size: 15px; }
+            #floating-chat-box { position: fixed; bottom: 75px; right: 20px; width: 340px; height: 460px; background: white; border-radius: 12px; box-shadow: 0 5px 25px rgba(0,0,0,0.25); display: none; flex-direction: column; z-index: 9999; border: 1px solid #cbd5e1; overflow: hidden; font-family: Arial, sans-serif; }
+            .chat-header { background: #0284c7; color: white; padding: 10px 14px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
+            .chat-admin-select { background: #0369a1; color: white; padding: 6px 10px; border-bottom: 1px solid #0284c7; font-size: 12px; display: flex; align-items: center; gap: 5px; }
+            .chat-admin-select select { background: white; color: #333; border: none; padding: 3px 6px; border-radius: 4px; font-size: 12px; outline: none; flex: 1; }
+            .chat-messages { flex: 1; padding: 10px; overflow-y: auto; background: #f8fafc; display: flex; flex-direction: column; gap: 8px; }
+            .msg-bubble { max-width: 80%; padding: 8px 12px; border-radius: 10px; font-size: 13px; line-height: 1.4; word-break: break-word; }
+            .msg-bubble img { max-width: 100%; border-radius: 6px; margin-top: 4px; display: block; }
+            .msg-user { background: #0284c7; color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
+            .msg-admin { background: #e2e8f0; color: #0f172a; align-self: flex-start; border-bottom-left-radius: 2px; }
+            .emoji-bar { background: #f1f5f9; padding: 4px 8px; display: flex; gap: 6px; border-top: 1px solid #e2e8f0; }
+            .emoji-btn { background: none; border: none; font-size: 16px; cursor: pointer; padding: 2px; }
+            .chat-input-area { display: flex; padding: 8px; background: white; border-top: 1px solid #e2e8f0; }
+            .chat-input-area input { flex: 1; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; outline: none; }
+            .chat-input-area button { background: #16a34a; color: white; border: none; padding: 8px 12px; margin-left: 5px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        </style>
+
+        <button id="floating-chat-btn">💬 Chat Admin</button>
+        
+        <div id="floating-chat-box">
+            <div class="chat-header">
+                <div>
+                    <div id="chat-header-title">💬 Chat</div>
+                </div>
+                <span id="close-chat" style="cursor:pointer; font-size:20px;">&times;</span>
+            </div>
+            
+            ${isAdmin ? `
+                <div class="chat-admin-select">
+                    <span>Discussion avec :</span>
+                    <select id="select-chat-user"><option value="">-- Choisir un membre --</option></select>
+                </div>
+            ` : ''}
+            
+            <div class="chat-messages" id="chat-messages-container"></div>
+            
+            <div class="emoji-bar">
+                <button class="emoji-btn" onclick="addEmoji('😊')">😊</button>
+                <button class="emoji-btn" onclick="addEmoji('😂')">😂</button>
+                <button class="emoji-btn" onclick="addEmoji('❤️')">❤️</button>
+                <button class="emoji-btn" onclick="addEmoji('👍')">👍</button>
+                <button class="emoji-btn" onclick="sendGifPrompt()" style="font-size:11px; font-weight:bold; background:#e2e8f0; border-radius:4px; padding:2px 5px;">🖼️ GIF</button>
+            </div>
+
+            <div class="chat-input-area">
+                <input type="text" id="chat-user-input" placeholder="Message ou URL d'image/GIF...">
+                <button id="btn-send-chat">Envoyer</button>
+            </div>
+        </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', chatWidgetHTML);
+
+    const btnToggle = document.getElementById('floating-chat-btn');
+    const chatBox = document.getElementById('floating-chat-box');
+    const btnClose = document.getElementById('close-chat');
+    const container = document.getElementById('chat-messages-container');
+    const input = document.getElementById('chat-user-input');
+    const btnSend = document.getElementById('btn-send-chat');
+    const headerTitle = document.getElementById('chat-header-title');
+    const selectUser = document.getElementById('select-chat-user');
+
+    let activeChatTarget = isAdmin ? "" : (session?.username || "");
+
+    // Remplir le menu déroulant des utilisateurs pour l'admin
+    if (isAdmin && selectUser) {
+        const users = getUsers();
+        selectUser.innerHTML = '<option value="">-- Sélectionner un membre --</option>' + 
+            users.map(u => `<option value="${u.username}">${u.username}</option>`).join('');
+
+        selectUser.addEventListener('change', (e) => {
+            activeChatTarget = e.target.value;
+            headerTitle.textContent = activeChatTarget ? `💬 Chat avec ${activeChatTarget}` : "💬 Chat Admin";
+            listenToMessages();
+        });
+    }
+
+    btnToggle.addEventListener('click', () => {
+        const currentSession = JSON.parse(localStorage.getItem('user_session'));
+        if (!currentSession) {
+            alert("⚠️ Vous devez être connecté(e) pour utiliser le tchat !");
+            return;
+        }
+        
+        if (!isAdmin) {
+            headerTitle.textContent = `💬 Chat avec l'Admin (${currentSession.username})`;
+            activeChatTarget = currentSession.username;
+            listenToMessages();
+        }
+
+        chatBox.style.display = (chatBox.style.display === 'flex') ? 'none' : 'flex';
+    });
+
+    btnClose.addEventListener('click', () => { chatBox.style.display = 'none'; });
+
+    function listenToMessages() {
+        if (!activeChatTarget) {
+            container.innerHTML = `<p style="text-align:center; color:#94a3b8; font-size:12px; margin-top:20px;">Sélectionnez un membre pour voir la conversation.</p>`;
+            return;
+        }
+
+        db.ref('chat_messages').on('value', (snapshot) => {
+            const data = snapshot.val();
+            const allMsgs = data ? Object.values(data) : [];
+
+            // Filtrer uniquement les messages du membre sélectionné
+            const chatMsgs = allMsgs.filter(m => m.username === activeChatTarget);
+
+            container.innerHTML = chatMsgs.map(m => {
+                const isImage = m.text.match(/\.(jpeg|jpg|gif|png|webp)$/i) || m.text.includes('giphy.com') || m.text.includes('tenor.com');
+                const content = isImage ? `<img src="${m.text}" alt="GIF">` : m.text;
+                const isMe = (isAdmin && m.fromAdmin) || (!isAdmin && !m.fromAdmin);
+
+                return `
+                    <div class="msg-bubble ${isMe ? 'msg-user' : 'msg-admin'}">
+                        <strong style="display:block; font-size:10px; opacity:0.8;">${m.senderName} (${m.timestamp || ''})</strong>
+                        ${content}
+                    </div>
+                `;
+            }).join('');
+            container.scrollTop = container.scrollHeight;
+        });
+    }
+
+    btnSend.addEventListener('click', sendMessage);
+    input.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
+
+    function sendMessage() {
+        const currentSession = JSON.parse(localStorage.getItem('user_session'));
+        const text = input.value.trim();
+        if (!text || !currentSession) return;
+
+        if (isAdmin && !activeChatTarget) {
+            alert("Veuillez d'abord choisir un membre dans le menu déroulant.");
+            return;
+        }
+
+        const newMessage = {
+            id: Date.now(),
+            username: activeChatTarget, // Rattaché au profil du membre
+            senderName: currentSession.username,
+            text: text,
+            fromAdmin: currentSession.isAdmin,
+            timestamp: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+        };
+
+        db.ref('chat_messages').push(newMessage).then(() => {
+            input.value = '';
+        });
+    }
+}
 // ==========================================
 // 7. LOGIQUE SPÉCIFIQUE À L'ATELIER DU 3 AOÛT
 // ==========================================
